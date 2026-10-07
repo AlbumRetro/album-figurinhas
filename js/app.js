@@ -2,7 +2,7 @@
 const SUPABASE_URL = "https://bysyjbuqdeayxoryrjmj.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_FCdyKbtrv_-59kkIcd9xRg_gtFXE4ny";
 
-// Evita conflito de nomes usando supabaseClient
+// Instância do cliente usando nome único para evitar conflito
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ESTADO GLOBAL DA APLICAÇÃO
@@ -12,27 +12,49 @@ let userInventory = {}; // { 'ZE-001': quantity }
 let allStickers = [];
 let availablePacks = [];
 
-// INICIALIZAÇÃO
+// INICIALIZAÇÃO E ESCUTA DE AUTENTICAÇÃO
 document.addEventListener("DOMContentLoaded", async () => {
-  // Check para ver se o utilizador já está autenticado via Google / Supabase Auth
+  // 1. Escuta alterações de estado de autenticação (captura o login vindo do redirecionamento do Google)
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    if (session && session.user) {
+      hideLoginScreen();
+      await initAuthenticatedUser(session.user);
+    }
+  });
+
+  // 2. Verifica se já existe uma sessão salva no navegador
   const { data: { session } } = await supabaseClient.auth.getSession();
-  if (session) {
+  if (session && session.user) {
+    hideLoginScreen();
     await initAuthenticatedUser(session.user);
   }
 });
 
-// FUNÇÃO DE LOGIN COM O GOOGLE (Chamada pelo botão do index.html)
+// ESCONDE A TELA DE LOGIN E EXIBE A APLICAÇÃO PRINCIPAL
+function hideLoginScreen() {
+  const loginOverlay = document.getElementById("login-screen") || document.querySelector(".login-container") || document.querySelector(".modal");
+  if (loginOverlay) {
+    loginOverlay.style.display = "none";
+  }
+
+  const mainApp = document.getElementById("main-app") || document.getElementById("app") || document.querySelector(".app-container");
+  if (mainApp) {
+    mainApp.style.display = "block";
+  }
+}
+
+// FUNÇÃO DE LOGIN COM O GOOGLE
 async function loginWithGoogle() {
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.href
+      redirectTo: window.location.origin + window.location.pathname
     }
   });
   if (error) alert("Erro ao autenticar com o Google: " + error.message);
 }
 
-// CARREGA O PERFIL DO UTILIZADOR AUTENTICADO
+// CARREGA E INICIALIZA O PERFIL DO USUÁRIO
 async function initAuthenticatedUser(authUser) {
   let { data: profile, error } = await supabaseClient
     .from("profiles")
@@ -41,7 +63,7 @@ async function initAuthenticatedUser(authUser) {
     .single();
 
   if (error && error.code === "PGRST116") {
-    // Perfil não existe -> Criar novo com 1000 pontos padrão
+    // Se o perfil não existir na tabela 'profiles', cria um novo com 1000 pontos
     const { data: newProfile, error: createError } = await supabaseClient
       .from("profiles")
       .insert([{ 
@@ -79,7 +101,7 @@ function updateUserRoleUI(role) {
 
   const btnAdmin = document.getElementById("btn-admin-tab");
   if (btnAdmin) btnAdmin.style.display = (role === "admin" || role === "superadmin") ? "inline-block" : "none";
-  
+
   const btnSuperadmin = document.getElementById("btn-superadmin-tab");
   if (btnSuperadmin) btnSuperadmin.style.display = (role === "superadmin") ? "inline-block" : "none";
 }
@@ -89,7 +111,7 @@ function updatePointsDisplay() {
   if (display) display.innerText = `SALDO: ${globalPoints} PONTOS`;
 }
 
-// CARREGAMENTO DE DADOS DO BANCO
+// CARREGAMENTO DO CATÁLOGO E INVENTÁRIO
 async function loadCatalogAndInventory() {
   const { data: stickers } = await supabaseClient.from("stickers").select("*").eq("is_active", true);
   allStickers = stickers || [];
@@ -131,7 +153,7 @@ function renderAlbum() {
   const grid = document.getElementById("album-grid");
   const status = document.getElementById("album-status");
   if (!grid) return;
-  
+
   grid.innerHTML = "";
 
   if (allStickers.length === 0) {
@@ -258,7 +280,7 @@ async function buyPack(pack) {
   showRevealModal(drawnSticker, isNew);
 }
 
-// MODAL DE REVELAÇÃO E INSPEÇÃO
+// MODAIS (REVELAÇÃO E INSPEÇÃO)
 function showRevealModal(sticker, isNew) {
   const overlay = document.getElementById("reveal-overlay");
   const badgeContainer = document.getElementById("loot-badge-container");
@@ -309,7 +331,7 @@ function closeInspect() {
   document.getElementById("inspect-overlay")?.classList.remove("active");
 }
 
-// FUNCIONALIDADE DO SUPERADMIN
+// PAINEL DO SUPERADMIN
 async function createStickerBySuperadmin() {
   if (!currentUser || currentUser.role !== "superadmin") {
     return alert("Acesso negado: apenas o Superadmin pode cadastrar e aprovar figurinhas.");
