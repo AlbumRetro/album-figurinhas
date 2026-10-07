@@ -15,9 +15,10 @@
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
+    <!-- Efeito Flash de Luz na Revelação -->
     <div id="flash" class="flash-overlay"></div>
 
-    <!-- TELA DE LOGIN (MANTIDO ID login-screen PARA COMPATIBILIDADE) -->
+    <!-- TELA DE LOGIN -->
     <div id="login-screen" class="auth-container">
       <div class="auth-box">
         <h1>ÁLBUM RETRÔ</h1>
@@ -47,7 +48,7 @@
       </div>
     </div>
 
-    <!-- CONTEÚDO PRINCIPAL (MANTIDO ID main-app - OCULTO ATÉ LOGAR) -->
+    <!-- CONTEÚDO PRINCIPAL -->
     <div id="main-app" style="display: none">
       <div class="user-bar">
         <span
@@ -58,10 +59,12 @@
             font-family: 'Press Start 2P';
           "
         ></span>
-        <span id="role-badge" class="role-badge user" style="margin-left: 10px;">USER</span>
-        <button class="reset-btn" style="margin: 0; margin-left: 15px;" onclick="handleLogout()">
-          Sair 🚪
-        </button>
+        <div>
+          <span id="role-badge" class="role-badge user">USER</span>
+          <button class="reset-btn" style="margin-left: 15px;" onclick="handleLogout()">
+            Sair 🚪
+          </button>
+        </div>
       </div>
 
       <h1>Álbum de Figurinhas Retrô</h1>
@@ -109,10 +112,10 @@
             Pacotes Disponíveis
           </h2>
           <p style="color: #aaa; margin-bottom: 20px; font-size: 0.85rem">
-            Escolha um pacote da loja para abrir e coletar novas figurinhas!
+            Escolha um pacote para sentir o poder da sorte!
           </p>
 
-          <div id="packs-container" class="pack-wrapper" style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+          <div id="packs-container" class="pack-wrapper" style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; padding: 20px 0;">
             <!-- Renderizado dinamicamente pelo renderShop() -->
           </div>
         </div>
@@ -135,7 +138,7 @@
           Cadastrar Nova Figurinha
         </h2>
         <div style="display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin: 0 auto; text-align: left;">
-          <input type="text" id="sticker-id" placeholder="ID da Figurinha (ex: ZE-001)" style="padding: 10px;" />
+          <input type="text" id="sticker-id" placeholder="ID da Figurinha (ex: 006)" style="padding: 10px;" />
           <input type="text" id="sticker-title" placeholder="Título/Nome" style="padding: 10px;" />
           <input type="text" id="sticker-url" placeholder="URL da Imagem" style="padding: 10px;" />
           <select id="sticker-rarity" style="padding: 10px;">
@@ -150,16 +153,20 @@
         </div>
       </div>
 
-      <!-- MODAL REVELAÇÃO LOOT BOX -->
+      <!-- MODAL REVELAÇÃO LOOT BOX (MÁXIMO GLAMOUR RETRÔ) -->
       <div id="reveal-overlay" class="reveal-overlay">
+        <!-- Raios Solares Giratórios de Fundo -->
         <div class="sunburst-rays"></div>
-        <div id="loot-badge-container"></div>
-        <div id="revealed-card-container"></div>
-        <button
-          id="btn-collect"
-          class="btn-collect"
-          onclick="closeReveal()"
-        ></button>
+        
+        <div class="lootbox-modal">
+          <div id="loot-badge-container"></div>
+          <div id="revealed-card-container"></div>
+          <button
+            id="btn-collect"
+            class="btn-collect"
+            onclick="closeReveal()"
+          >COLAR NO ÁLBUM</button>
+        </div>
       </div>
 
       <!-- MODAL DE INSPEÇÃO -->
