@@ -39,6 +39,7 @@ let globalPoints = 0;
 let userInventory = {}; // Mapeamento: { 'ZE-001': quantity }
 let allStickers = [];
 let availablePacks = [];
+let raritiesMap = {}; // Tabela centralizada de pesos: { 'common': 100, 'rare': 30, 'epic': 10, 'legendary': 2 }
 
 // INICIALIZAÇÃO E ESCUTA DE AUTENTICAÇÃO
 document.addEventListener("DOMContentLoaded", async () => {
@@ -82,7 +83,7 @@ async function handleLogout() {
   window.location.reload();
 }
 
-// INICIALIZA USUÁRIO AUTENTICADO
+// INICIALIZA USUÁRIO AUTENTICADO (COM TRATAMENTO DE RACE CONDITION VIA UPSERT)
 async function initAuthenticatedUser(authUser) {
   const userEmailDisplay = document.getElementById("user-email-display");
   if (userEmailDisplay) userEmailDisplay.innerText = authUser.email;
@@ -91,22 +92,23 @@ async function initAuthenticatedUser(authUser) {
     .from("profiles")
     .select("*")
     .eq("id", authUser.id)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code === "PGRST116") {
+  // Se não encontrar o perfil, cria ou atualiza via UPSERT para evitar erros de chave duplicada
+  if (!profile) {
     const { data: newProfile, error: createError } = await supabaseClient
       .from("profiles")
-      .insert([{ 
+      .upsert([{ 
         id: authUser.id,
         youtube_handle: authUser.email, 
         display_name: authUser.user_metadata?.full_name || authUser.email, 
         global_points: 1000, 
         role: "user" 
-      }])
+      }], { onConflict: "id" })
       .select()
       .single();
 
-    if (createError) return alert("Erro ao criar perfil: " + createError.message);
+    if (createError) return alert("Erro ao criar/atualizar perfil: " + createError.message);
     profile = newProfile;
   } else if (error) {
     return alert("Erro ao consultar perfil: " + error.message);
@@ -141,14 +143,26 @@ function updatePointsDisplay() {
   if (display) display.innerText = `SALDO: ${globalPoints} PONTOS`;
 }
 
-// CARREGA CATÁLOGO E INVENTÁRIO (FILTRANDO RIGOROSAMENTE QUANTIDADE ZERO)
+// CARREGA CATÁLOGO, RARIDADES E INVENTÁRIO
 async function loadCatalogAndInventory() {
+  // 1. Carrega tabela centralizada de pesos de raridade
+  const { data: rarities } = await supabaseClient.from("rarities").select("*");
+  raritiesMap = {};
+  if (rarities) {
+    rarities.forEach(r => {
+      raritiesMap[r.id] = r.default_drop_weight;
+    });
+  }
+
+  // 2. Carrega figurinhas ativas
   const { data: stickers } = await supabaseClient.from("stickers").select("*").eq("is_active", true);
   allStickers = stickers || [];
 
+  // 3. Carrega pacotes ativos
   const { data: packs } = await supabaseClient.from("packs").select("*").eq("is_active", true);
   availablePacks = packs || [];
 
+  // 4. Carrega inventário do usuário logado
   if (currentUser) {
     const { data: inventory } = await supabaseClient
       .from("user_stickers")
@@ -158,7 +172,6 @@ async function loadCatalogAndInventory() {
     userInventory = {};
     if (inventory) {
       inventory.forEach(item => {
-        // FILTRAGEM RIGOROSA: Apenas armazena no inventário se a quantidade for MAIOR QUE ZERO
         if (item.quantity > 0) {
           userInventory[item.sticker_id] = item.quantity;
         }
@@ -198,7 +211,6 @@ function renderAlbum() {
 
   allStickers.forEach(sticker => {
     const count = userInventory[sticker.id] || 0;
-    // TRAVA DE SEGURANÇA: Se count <= 0 a figurinha NUNCA aparece colada
     const isUnlocked = count > 0;
     if (isUnlocked) coladas++;
 
@@ -275,6 +287,7 @@ function renderShop() {
   }
 
   availablePacks.forEach(pack => {
+    const qty = pack.stickers_count || 1;
     const packEl = document.createElement("div");
     packEl.className = "booster-pack";
     packEl.onclick = () => startUnboxingCeremony(pack);
@@ -285,6 +298,7 @@ function renderShop() {
         <div class="pack-foil-title">${pack.pack_name}</div>
         <div class="pack-foil-emblem">🎁</div>
         <div class="pack-foil-sub">${pack.cost_points} PONTOS</div>
+        <div style="font-size: 0.65rem; color: #00ffff; margin-top: 6px; font-family:'Press Start 2P';">${qty} FIGURINHA(S)</div>
       </div>
       <div class="pack-bottom-crimp"></div>
     `;
@@ -292,46 +306,88 @@ function renderShop() {
   });
 }
 
-// CERIMÔNIA DE UNBOXING COM DRAMA, SUSPENSE, EFEITOS SONOROS E FLASHBANG
+// ALGORITMO DE WEIGHTED RANDOM BASEADO NA TABELA RARITIES
+function getRandomStickerWeighted(stickersPool) {
+  const totalWeight = stickersPool.reduce((sum, sticker) => {
+    const weight = raritiesMap[sticker.rarity] !== undefined ? raritiesMap[sticker.rarity] : 100;
+    return sum + weight;
+  }, 0);
+
+  let randomNum = Math.random() * totalWeight;
+
+  for (const sticker of stickersPool) {
+    const weight = raritiesMap[sticker.rarity] !== undefined ? raritiesMap[sticker.rarity] : 100;
+    if (randomNum < weight) {
+      return sticker;
+    }
+    randomNum -= weight;
+  }
+  return stickersPool[0];
+}
+
+// CERIMÔNIA DE UNBOXING
 async function startUnboxingCeremony(pack) {
   if (globalPoints < pack.cost_points) {
     return alert("Pontos insuficientes para comprar este pacote!");
   }
 
-  if (allStickers.length === 0) {
-    return alert("Não há figurinhas cadastradas para sorteio.");
+  // 1. Busca relacionamento na tabela pack_stickers para saber quais figurinhas podem sair neste pacote
+  const { data: packStickersRelations } = await supabaseClient
+    .from("pack_stickers")
+    .select("sticker_id")
+    .eq("pack_id", pack.id);
+
+  let eligibleStickers = [];
+
+  if (packStickersRelations && packStickersRelations.length > 0) {
+    eligibleStickers = packStickersRelations.map(rel => {
+      return allStickers.find(s => String(s.id) === String(rel.sticker_id));
+    }).filter(Boolean);
+  } else {
+    // Se não houver vinculação restrita, sorteia de todo o catálogo ativo
+    eligibleStickers = allStickers;
   }
 
-  // 1. Prepara os elementos da Cerimônia de Unboxing
+  if (eligibleStickers.length === 0) {
+    return alert("Não há figurinhas disponíveis para este pacote no momento.");
+  }
+
+  // 2. Prepara os elementos da Cerimônia de Unboxing
   const ceremonyOverlay = document.getElementById("loot-ceremony-overlay");
   const ceremonyPackTitle = document.getElementById("ceremony-pack-title");
   const unboxingPack = document.querySelector(".unboxing-pack");
 
   if (ceremonyPackTitle) ceremonyPackTitle.innerText = pack.pack_name.toUpperCase();
 
-  // 2. Ativa o palco da cerimônia e INICIA O TREME-TREME do pacote
   unboxingPack.className = "unboxing-pack suspense-shake";
   ceremonyOverlay.classList.add("active");
 
-  // 🎵 SOM DE COMPRA: Disparado INSTANTANEAMENTE ao começar a tremer!
   playAudio(buySound);
 
-  // 3. Debita pontos no banco de dados em segundo plano
-  globalPoints -= pack.cost_points;
-  updatePointsDisplay();
+  // 3. DEDUÇÃO E ATUALIZAÇÃO RIGOROSA NO BANCO DE DADOS
+  const updatedPoints = globalPoints - pack.cost_points;
 
-  supabaseClient
+  const { error: updatePointsErr } = await supabaseClient
     .from("profiles")
-    .update({ global_points: globalPoints })
+    .update({ global_points: updatedPoints })
     .eq("id", currentUser.id);
 
-  // ETAPA 1 (0.0s - 2.0s): Tremores frenéticos e acúmulo de energia neon
+  if (updatePointsErr) {
+    ceremonyOverlay.classList.remove("active");
+    return alert("Erro ao debitar pontos no banco de dados: " + updatePointsErr.message);
+  }
+
+  // Atualiza estado local
+  globalPoints = updatedPoints;
+  currentUser.global_points = updatedPoints;
+  updatePointsDisplay();
+
+  // ETAPA 1 (2.0s): O pacote rasga
   setTimeout(() => {
-    // ETAPA 2 (2.0s): O pacote rasga e explode luz de dentro
     unboxingPack.className = "unboxing-pack tear-open";
   }, 2000);
 
-  // ETAPA 3 (2.5s): FLASHBANG NEON DE ALTA INTENSIDADE
+  // ETAPA 2 (2.5s): Flashbang
   setTimeout(() => {
     const flashEl = document.getElementById("flash");
     if (flashEl) {
@@ -340,36 +396,39 @@ async function startUnboxingCeremony(pack) {
     }
   }, 2500);
 
-  // ETAPA 4 (2.8s): Sorteio no banco de dados, Som do Loot e Abertura do Modal de Revelação
+  // ETAPA 3 (2.8s): Sorteia conforme o stickers_count do pacote e insere no inventário
   setTimeout(async () => {
-    const randomIndex = Math.floor(Math.random() * allStickers.length);
-    const drawnSticker = allStickers[randomIndex];
+    const countToDraw = pack.stickers_count || 1;
+    const drawnItems = [];
 
-    const currentQty = userInventory[drawnSticker.id] || 0;
-    const isNew = currentQty === 0;
+    for (let i = 0; i < countToDraw; i++) {
+      const drawnSticker = getRandomStickerWeighted(eligibleStickers);
+      const currentQty = userInventory[drawnSticker.id] || 0;
+      const isNew = currentQty === 0;
 
-    userInventory[drawnSticker.id] = currentQty + 1;
+      userInventory[drawnSticker.id] = currentQty + 1;
 
-    await supabaseClient
-      .from("user_stickers")
-      .upsert({
-        user_id: currentUser.id,
-        sticker_id: drawnSticker.id,
-        quantity: userInventory[drawnSticker.id],
-        updated_at: new Date().toISOString()
-      }, { onConflict: "user_id, sticker_id" });
+      await supabaseClient
+        .from("user_stickers")
+        .upsert({
+          user_id: currentUser.id,
+          sticker_id: drawnSticker.id,
+          quantity: userInventory[drawnSticker.id],
+          updated_at: new Date().toISOString()
+        }, { onConflict: "user_id, sticker_id" });
 
-    // 🎵 SOM DE LOOTBOX: Disparado na revelação da figurinha
+      drawnItems.push({ sticker: drawnSticker, isNew });
+    }
+
     playAudio(lootSound);
 
-    // Fecha a cerimônia de unboxing e abre a revelação
     ceremonyOverlay.classList.remove("active");
-    showRevealModal(drawnSticker, isNew);
+    showRevealModalMulti(drawnItems);
   }, 2800);
 }
 
-// MODAL DE REVELAÇÃO DA FIGURINHA SORTEADA
-function showRevealModal(sticker, isNew) {
+// MODAL DE REVELAÇÃO EXIBINDO MÚLTIPLAS FIGURINHAS
+function showRevealModalMulti(drawnItems) {
   const overlay = document.getElementById("reveal-overlay");
   const badgeContainer = document.getElementById("loot-badge-container");
   const container = document.getElementById("revealed-card-container");
@@ -377,22 +436,34 @@ function showRevealModal(sticker, isNew) {
 
   if (!overlay) return;
 
-  badgeContainer.innerHTML = isNew 
-    ? `<div class="badge" style="background: #00ffff; color:#000; box-shadow: 0 0 25px #00ffff;">★ FIGURINHA NOVA! ★</div>`
-    : `<div class="badge" style="background: #ff9800; color:#000; box-shadow: 0 0 25px #ff9800;">REPETIDA (+1)</div>`;
+  const hasNew = drawnItems.some(item => item.isNew);
 
-  btnCollect.innerText = isNew ? "COLAR NO ÁLBUM" : "GUARDAR NO INVENTÁRIO";
+  badgeContainer.innerHTML = hasNew 
+    ? `<div class="badge" style="background: #00ffff; color:#000; box-shadow: 0 0 25px #00ffff;">★ FIGURINHA(S) NOVA(S)! ★</div>`
+    : `<div class="badge" style="background: #ff9800; color:#000; box-shadow: 0 0 25px #ff9800;">REPETIDA(S) OBTIDA(S)</div>`;
 
-  container.innerHTML = `
-    <div class="large-card rarity-${sticker.rarity}">
-      <img src="${sticker.image_url}" alt="${sticker.title}">
-      <div class="card-title" style="color: #00ffff; margin-top: 12px; font-family:'Press Start 2P'; font-size: 0.85rem;">#${sticker.id} - ${sticker.title}</div>
-    </div>
-  `;
+  btnCollect.innerText = "COLAR NO ÁLBUM";
+
+  container.style.display = "flex";
+  container.style.flexWrap = "wrap";
+  container.style.justifyContent = "center";
+  container.style.gap = "15px";
+  container.innerHTML = "";
+
+  drawnItems.forEach(item => {
+    const cardEl = document.createElement("div");
+    cardEl.className = `large-card rarity-${item.sticker.rarity}`;
+    cardEl.style.margin = "5px";
+    cardEl.innerHTML = `
+      ${item.isNew ? '<div class="badge" style="background:#00ffff; color:#000; font-size:0.6rem;">NOVA!</div>' : ''}
+      <img src="${item.sticker.image_url}" alt="${item.sticker.title}">
+      <div class="card-title" style="color: #00ffff; margin-top: 8px; font-family:'Press Start 2P'; font-size: 0.7rem;">#${item.sticker.id} - ${item.sticker.title}</div>
+    `;
+    container.appendChild(cardEl);
+  });
 
   overlay.classList.add("active");
 
-  // Explosão Sequencial de Confetes
   if (window.confetti) {
     confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
     setTimeout(() => {
