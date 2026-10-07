@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <!-- Flash da Câmera / Explosão Neon -->
+    <!-- Flash Overlay de Alta Intensidade -->
     <div id="flash" class="flash-overlay"></div>
 
     <!-- TELA DE LOGIN -->
@@ -109,10 +109,10 @@
               margin: 15px 0 10px 0;
             "
           >
-            PACOTES LENDÁRIOS
+            BOOSTER PACKS HOLOGRAM
           </h2>
           <p style="color: #aaa; margin-bottom: 20px; font-size: 0.85rem">
-            Clique no booster foil para testar sua sorte na Lootbox!
+            Clique no pacote aluminum foil para iniciar a cerimônia de abertura!
           </p>
 
           <div id="packs-container" class="pack-wrapper" style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; padding: 20px 0;">
@@ -153,7 +153,24 @@
         </div>
       </div>
 
-      <!-- MODAL REVELAÇÃO LOOT BOX (MÁXIMO GLAMOUR RETRÔ) -->
+      <!-- OVERLAY DE ANIMAÇÃO DE SUSPENSE DA LOOTBOX -->
+      <div id="loot-ceremony-overlay" class="loot-ceremony-overlay">
+        <div class="sunburst-rays"></div>
+        <div id="ceremony-pack-stage" class="ceremony-pack-stage">
+          <div class="unboxing-pack">
+            <div class="pack-top-crimp"></div>
+            <div class="pack-foil-body">
+              <div class="pack-foil-title" id="ceremony-pack-title">BOOSTER PACK</div>
+              <div class="pack-foil-emblem">⚡</div>
+              <div class="pack-foil-sub">1 FIGURINHA</div>
+            </div>
+            <div class="pack-bottom-crimp"></div>
+            <div class="pack-burst-light"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL DE REVELAÇÃO DA FIGURINHA -->
       <div id="reveal-overlay" class="reveal-overlay">
         <div class="sunburst-rays"></div>
         <div class="lootbox-modal">
