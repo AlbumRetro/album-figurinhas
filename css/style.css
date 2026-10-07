@@ -53,6 +53,12 @@ h1.glitch-title {
   box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
 }
 
+.user-email-text {
+  color: #00ffff;
+  font-size: 0.8rem;
+  font-family: 'Press Start 2P', monospace;
+}
+
 .role-badge {
   font-size: 0.65rem;
   font-family: 'Press Start 2P', monospace;
@@ -73,6 +79,10 @@ h1.glitch-title {
   font-size: 0.65rem;
   cursor: pointer;
   box-shadow: 0 0 10px #ff007f;
+}
+
+.logout-btn {
+  margin-left: 15px;
 }
 
 /* NAVEGAÇÃO */
@@ -104,6 +114,10 @@ nav {
   border-color: #ffffff;
   box-shadow: 0 0 25px #00ffff, 0 4px 0 #008888;
   transform: translateY(-2px);
+}
+
+.btn-hidden {
+  display: none;
 }
 
 .tab-content { display: none; }
@@ -218,6 +232,14 @@ nav {
   padding: 14px 24px;
   border-radius: 10px;
   margin-bottom: 25px;
+}
+
+.pack-wrapper {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 20px 0;
 }
 
 /* DESENHO DO PACOTE FOIL ALUMINIO 90S */
@@ -380,7 +402,7 @@ nav {
   animation: lightExplode 0.7s forwards ease-out;
 }
 
-/* OVERLAY DO MODAL DE REVELAÇÃO */
+/* OVERLAY DO MODAL DE REVELAÇÃO E INSPEÇÃO */
 .reveal-overlay,
 .inspect-overlay {
   position: fixed;
@@ -436,8 +458,10 @@ nav {
   box-shadow: 0 0 50px #00ffff, inset 0 0 30px rgba(0, 255, 255, 0.6);
   padding: 30px 22px;
   border-radius: 22px;
-  max-width: 400px;
-  width: 90%;
+  max-width: 800px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
   text-align: center;
   animation: cardPopUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -467,6 +491,15 @@ nav {
   animation: badgeGlow 0.8s infinite alternate;
 }
 
+#revealed-card-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  margin: 15px 0;
+  width: 100%;
+}
+
 .large-card {
   position: relative;
   background: #120826;
@@ -475,7 +508,7 @@ nav {
   border-radius: 16px;
   padding: 12px;
   width: 100%;
-  max-width: 280px;
+  max-width: 240px;
   margin: 0 auto;
   z-index: 2;
   animation: cardPulse 1.5s ease-in-out infinite alternate;
@@ -485,7 +518,7 @@ nav {
 .inspect-box img {
   width: 100%;
   aspect-ratio: 3 / 4;
-  max-height: 50vh;
+  max-height: 45vh;
   object-fit: contain;
   border-radius: 10px;
   background: #000;
@@ -520,6 +553,12 @@ nav {
   padding: 16px;
   max-width: 90vw;
   max-height: 85vh;
+}
+
+.inspect-hint {
+  color: #aaa;
+  margin-top: 12px;
+  font-size: 0.8rem;
 }
 
 /* ANIMAÇÕES DE DOPAMINA E UNBOXING */
@@ -568,7 +607,7 @@ nav {
   100% { box-shadow: 0 0 50px #00ffff, 0 0 25px #ff007f; }
 }
 
-/* AUTENTICAÇÃO */
+/* AUTENTICAÇÃO E ESTRUTURA GERAL */
 .auth-container {
   display: flex;
   justify-content: center;
@@ -587,9 +626,77 @@ nav {
   box-shadow: 0 0 35px rgba(0, 255, 255, 0.6);
 }
 
+.auth-subtitle {
+  color: #00ffff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.75rem;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.btn-google {
+  width: 100%;
+  padding: 15px;
+  font-size: 0.85rem;
+}
+
 .auth-error {
   color: #ff007f;
   font-size: 0.8rem;
   margin-top: 15px;
   font-family: 'Press Start 2P', monospace;
+}
+
+.main-app-container {
+  display: none;
+}
+
+.status-text {
+  font-size: 0.95rem;
+  color: #aaa;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1rem;
+  color: #00ffff;
+  margin-bottom: 10px;
+}
+
+.section-subtitle {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.95rem;
+  color: #00ffff;
+  margin: 15px 0 10px 0;
+}
+
+/* FORMULÁRIO DO SUPERADMIN */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 400px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.form-input {
+  padding: 10px;
+  background: #120826;
+  border: 2px solid #ff007f;
+  color: #fff;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #00ffff;
+  box-shadow: 0 0 10px #00ffff;
+}
+
+.btn-submit {
+  padding: 12px;
+  margin-top: 10px;
 }
