@@ -281,11 +281,7 @@ async function startUnboxingCeremony(pack) {
     return alert("Não há figurinhas cadastradas para sorteio.");
   }
 
-  // 1. Toca instantaneamente o som de COMPRA ao clicar no pacote
-  buySound.currentTime = 0;
-  buySound.play().catch(err => console.log("Erro ao reproduzir som de compra:", err));
-
-  // 2. Debita pontos
+  // 1. Debita pontos
   globalPoints -= pack.cost_points;
   updatePointsDisplay();
 
@@ -294,16 +290,20 @@ async function startUnboxingCeremony(pack) {
     .update({ global_points: globalPoints })
     .eq("id", currentUser.id);
 
-  // 3. Prepara os elementos da Cerimônia de Unboxing
+  // 2. Prepara os elementos da Cerimônia de Unboxing
   const ceremonyOverlay = document.getElementById("loot-ceremony-overlay");
   const ceremonyPackTitle = document.getElementById("ceremony-pack-title");
   const unboxingPack = document.querySelector(".unboxing-pack");
 
   if (ceremonyPackTitle) ceremonyPackTitle.innerText = pack.pack_name.toUpperCase();
 
-  // Ativa o palco de cerimônia com o pacote flutuante
+  // 3. Ativa o palco da cerimônia e INICIA O TREME-TREME do pacote
   unboxingPack.className = "unboxing-pack suspense-shake";
   ceremonyOverlay.classList.add("active");
+
+  // 🎵 SOM DE COMPRA: Toca exatamente ao começar a tremer!
+  buySound.currentTime = 0;
+  buySound.play().catch(err => console.log("Erro ao reproduzir som de compra:", err));
 
   // ETAPA 1 (0.0s - 2.0s): Tremores frenéticos e acúmulo de energia neon
   setTimeout(() => {
@@ -339,7 +339,7 @@ async function startUnboxingCeremony(pack) {
         updated_at: new Date().toISOString()
       }, { onConflict: "user_id, sticker_id" });
 
-    // Toca o som de LOOTBOX na revelação
+    // 🎵 SOM DE LOOTBOX: Toca na revelação da figurinha
     lootSound.currentTime = 0;
     lootSound.play().catch(err => console.log("Erro ao reproduzir som de loot:", err));
 
