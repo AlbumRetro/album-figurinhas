@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Álbum de Figurinhas Retrô</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="flash" class="flash-overlay"></div>
+
+    <!-- TELA DE LOGIN -->
+    <div id="auth-screen" class="auth-container">
+      <div class="auth-box">
+        <h1>ÁLBUM RETRÔ</h1>
+        <p
+          style="
+            color: #00ffff;
+            font-family: 'Press Start 2P';
+            font-size: 0.75rem;
+            margin-bottom: 20px;
+            line-height: 1.4;
+          "
+        >
+          Entre com sua conta Google para salvar seu progresso online
+        </p>
+
+        <div class="auth-buttons">
+          <button
+            class="nav-btn active"
+            style="width: 100%; padding: 15px; font-size: 0.85rem"
+            onclick="loginWithGoogle()"
+          >
+            🚀 ENTRAR COM O GOOGLE
+          </button>
+        </div>
+
+        <p id="auth-error" class="auth-error"></p>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL (OCULTO ATÉ LOGAR) -->
+    <div id="app-screen" style="display: none">
+      <div class="user-bar">
+        <span
+          id="user-email-display"
+          style="
+            color: #00ffff;
+            font-size: 0.8rem;
+            font-family: 'Press Start 2P';
+          "
+        ></span>
+        <button class="reset-btn" style="margin: 0" onclick="handleLogout()">
+          Sair 🚪
+        </button>
+      </div>
+
+      <h1>Álbum de Figurinhas Retrô</h1>
+
+      <nav>
+        <button class="nav-btn active" onclick="switchTab('album')">
+          Meu Álbum
+        </button>
+        <button class="nav-btn" onclick="switchTab('shop')">
+          Abrir Pacote 🎁
+        </button>
+        <button class="nav-btn" onclick="switchTab('inventory')">
+          Inventário / Repetidas 📦
+        </button>
+      </nav>
+
+      <!-- ABA 1: ÁLBUM -->
+      <div id="tab-album" class="tab-content active">
+        <p id="album-status" style="font-size: 1rem; color: #aaa">
+          Carregando álbum...
+        </p>
+        <div id="album-grid" class="grid"></div>
+      </div>
+
+      <!-- ABA 2: LOJA / PACOTE -->
+      <div id="tab-shop" class="tab-content">
+        <div class="shop-container">
+          <div id="points-display" class="points-display">
+            SALDO: 1000 PONTOS
+          </div>
+          <h2
+            style="
+              font-family: 'Press Start 2P';
+              font-size: 0.95rem;
+              color: #00ffff;
+              margin: 10px 0;
+            "
+          >
+            Pacote Retrô (100 Pts)
+          </h2>
+          <p style="color: #aaa; margin-bottom: 15px; font-size: 0.85rem">
+            Clique no pacote para rasgar e revelar sua figurinha!
+          </p>
+
+          <div class="pack-wrapper">
+            <div id="booster-pack" class="booster-pack" onclick="openPack()">
+              <div class="pack-top-teeth"></div>
+              <div class="pack-header-badge">★ EXTRA HI-RES ★</div>
+              <div class="pack-main-title">RETRO<br />CARDS</div>
+              <div class="pack-pixel-art-icon">👾</div>
+              <div class="pack-footer-text">1 FIGURINHA 8-BIT</div>
+              <div class="pack-bottom-teeth"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 3: INVENTÁRIO -->
+      <div id="tab-inventory" class="tab-content">
+        <h2
+          style="font-family: 'Press Start 2P'; font-size: 1rem; color: #00ffff"
+        >
+          Minha Coleção Completa
+        </h2>
+        <p id="inventory-status" style="font-size: 0.95rem; color: #aaa"></p>
+        <div id="inventory-grid" class="grid"></div>
+      </div>
+
+      <!-- MODAL REVELAÇÃO LOOT BOX -->
+      <div id="reveal-overlay" class="reveal-overlay">
+        <div class="sunburst-rays"></div>
+        <div id="loot-badge-container"></div>
+        <div id="revealed-card-container"></div>
+        <button
+          id="btn-collect"
+          class="btn-collect"
+          onclick="closeReveal()"
+        ></button>
+      </div>
+
+      <!-- MODAL DE INSPEÇÃO -->
+      <div
+        id="inspect-overlay"
+        class="inspect-overlay"
+        onclick="closeInspect()"
+      >
+        <div id="inspect-card-container"></div>
+        <p style="color: #aaa; margin-top: 12px; font-size: 0.8rem">
+          (Clique em qualquer lugar para fechar)
+        </p>
+      </div>
+
+      <button class="reset-btn" onclick="resetProgress()">
+        Reiniciar Progresso Local
+      </button>
+    </div>
+
+    <script src="js/app.js"></script>
+  </body>
+</html>
