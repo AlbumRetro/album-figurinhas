@@ -242,6 +242,93 @@ nav {
   padding: 20px 0;
 }
 
+/* ESTRUTURA DO CARROSSEL HORIZONTAL DE PACOTES */
+.carousel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 10px 40px;
+}
+
+.carousel-track-container {
+  overflow: hidden;
+  width: 240px;
+  margin: 0 auto;
+}
+
+.carousel-track {
+  display: flex;
+  gap: 30px;
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.carousel-item {
+  flex: 0 0 210px;
+}
+
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(18, 8, 38, 0.9);
+  border: 2px solid #00ffff;
+  color: #00ffff;
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  transition: all 0.2s ease;
+}
+
+.carousel-btn:hover {
+  background: #00ffff;
+  color: #000;
+  box-shadow: 0 0 25px #00ffff;
+}
+
+.carousel-btn.prev { left: 0; }
+.carousel-btn.next { right: 0; }
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.carousel-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #333;
+  border: 1px solid #ff007f;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.carousel-dot.active {
+  background: #00ffff;
+  box-shadow: 0 0 10px #00ffff;
+  transform: scale(1.3);
+}
+
+.pack-foil-badge {
+  font-size: 0.65rem;
+  color: #00ffff;
+  margin-top: 6px;
+  font-family: 'Press Start 2P', monospace;
+}
+
 /* DESENHO DO PACOTE FOIL ALUMINIO 90S */
 .booster-pack {
   position: relative;
@@ -491,6 +578,18 @@ nav {
   animation: badgeGlow 0.8s infinite alternate;
 }
 
+.badge-new {
+  background: #00ffff !important;
+  color: #000 !important;
+  box-shadow: 0 0 25px #00ffff !important;
+}
+
+.badge-duplicate {
+  background: #ff9800 !important;
+  color: #000 !important;
+  box-shadow: 0 0 25px #ff9800 !important;
+}
+
 #revealed-card-container {
   display: flex;
   flex-wrap: wrap;
@@ -559,6 +658,12 @@ nav {
   color: #aaa;
   margin-top: 12px;
   font-size: 0.8rem;
+}
+
+.inspect-rarity-text {
+  color: #aaa;
+  font-size: 0.75rem;
+  margin-top: 8px;
 }
 
 /* ANIMAÇÕES DE DOPAMINA E UNBOXING */
