@@ -13,8 +13,12 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <!-- Preload dos Áudios do Supabase para Carregamento Instantâneo -->
+    <link rel="preload" href="https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/compra.mp3" as="audio" />
+    <link rel="preload" href="https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/loot.mp3" as="audio" />
+
     <!-- Folha de Estilos Unificada com Cache Busting -->
-    <link rel="stylesheet" href="css/style.css?v=3.0" />
+    <link rel="stylesheet" href="css/style.css?v=3.1" />
   </head>
   <body>
     <!-- Flash Overlay de Alta Intensidade -->
@@ -199,7 +203,7 @@
       </div>
     </div>
 
-    <!-- Script carregado estritamente no final do BODY após a árvore DOM existir -->
-    <script src="js/app.js?v=3.0"></script>
+    <!-- Script com versão incrementada para evitar cache antigo -->
+    <script src="js/app.js?v=3.1"></script>
   </body>
 </html>
