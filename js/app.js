@@ -2,6 +2,13 @@
 const SUPABASE_URL = "https://bysyjbuqdeayxoryrjmj.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_FCdyKbtrv_-59kkIcd9xRg_gtFXE4ny";
 
+// ÁUDIOS E EFEITOS SONOROS (SUPABASE STORAGE)
+const AUDIO_BUY_URL = 'https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/compra.mp3';
+const AUDIO_LOOT_URL = 'https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/loot.mp3';
+
+const buySound = new Audio(AUDIO_BUY_URL);
+const lootSound = new Audio(AUDIO_LOOT_URL);
+
 // Instância do cliente Supabase
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -264,7 +271,7 @@ function renderShop() {
   });
 }
 
-// CERIMÔNIA DE UNBOXING COM DRAMA, SUSPENSE E FLASHBANG (3.5 SEGUNDOS DE PURA DOPAMINA)
+// CERIMÔNIA DE UNBOXING COM DRAMA, SUSPENSE, EFEITOS SONOROS E FLASHBANG
 async function startUnboxingCeremony(pack) {
   if (globalPoints < pack.cost_points) {
     return alert("Pontos insuficientes para comprar este pacote!");
@@ -274,7 +281,11 @@ async function startUnboxingCeremony(pack) {
     return alert("Não há figurinhas cadastradas para sorteio.");
   }
 
-  // 1. Debita pontos
+  // 1. Toca instantaneamente o som de COMPRA ao clicar no pacote
+  buySound.currentTime = 0;
+  buySound.play().catch(err => console.log("Erro ao reproduzir som de compra:", err));
+
+  // 2. Debita pontos
   globalPoints -= pack.cost_points;
   updatePointsDisplay();
 
@@ -283,7 +294,7 @@ async function startUnboxingCeremony(pack) {
     .update({ global_points: globalPoints })
     .eq("id", currentUser.id);
 
-  // 2. Prepara os elementos da Cerimônia de Unboxing
+  // 3. Prepara os elementos da Cerimônia de Unboxing
   const ceremonyOverlay = document.getElementById("loot-ceremony-overlay");
   const ceremonyPackTitle = document.getElementById("ceremony-pack-title");
   const unboxingPack = document.querySelector(".unboxing-pack");
@@ -309,7 +320,7 @@ async function startUnboxingCeremony(pack) {
     }
   }, 2500);
 
-  // ETAPA 4 (2.8s): Sorteio no banco de dados e Abertura do Modal de Revelação
+  // ETAPA 4 (2.8s): Sorteio no banco de dados, Som do Loot e Abertura do Modal de Revelação
   setTimeout(async () => {
     const randomIndex = Math.floor(Math.random() * allStickers.length);
     const drawnSticker = allStickers[randomIndex];
@@ -327,6 +338,10 @@ async function startUnboxingCeremony(pack) {
         quantity: userInventory[drawnSticker.id],
         updated_at: new Date().toISOString()
       }, { onConflict: "user_id, sticker_id" });
+
+    // Toca o som de LOOTBOX na revelação
+    lootSound.currentTime = 0;
+    lootSound.play().catch(err => console.log("Erro ao reproduzir som de loot:", err));
 
     // Fecha a cerimônia de unboxing e abre a revelação
     ceremonyOverlay.classList.remove("active");
