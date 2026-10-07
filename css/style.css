@@ -17,12 +17,12 @@ h1.glitch-title {
   font-family: 'Press Start 2P', monospace;
   font-size: 1.5rem;
   color: #fff;
-  text-shadow: 3px 3px 0 #ff007f, -3px -3px 0 #00ffff, 0 0 15px #ff007f;
+  text-shadow: 3px 3px 0 #ff007f, -3px -3px 0 #00ffff, 0 0 20px #ff007f;
   margin-bottom: 20px;
   letter-spacing: 2px;
 }
 
-/* FLASH DE REVELAÇÃO DE ALTA INTENSIDADE */
+/* FLASH OVERLAY PARA ABERTURA */
 .flash-overlay {
   position: fixed;
   top: 0;
@@ -30,10 +30,10 @@ h1.glitch-title {
   width: 100vw;
   height: 100vh;
   background: #ffffff;
-  z-index: 10000;
+  z-index: 20000;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.1s ease-out;
+  transition: opacity 0.15s ease-out;
 }
 
 .flash-overlay.active {
@@ -75,7 +75,7 @@ h1.glitch-title {
   box-shadow: 0 0 10px #ff007f;
 }
 
-/* NAVEGAÇÃO RETRÔ */
+/* NAVEGAÇÃO */
 nav {
   display: flex;
   justify-content: center;
@@ -109,7 +109,7 @@ nav {
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* GRID RESPONSIVO DE ÁLBUM */
+/* GRID DE FIGURINHAS */
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(260px, 320px));
@@ -201,7 +201,7 @@ nav {
   z-index: 2;
 }
 
-/* PACOTES DE LOOT BOX (BOOSTER FOIL HOLOGRAM) */
+/* PACOTES DE LOOT BOX NOSTÁLGICOS (ESTILO PACOTE DE FIGURINHA REAL) */
 .shop-container {
   display: flex;
   flex-direction: column;
@@ -220,52 +220,167 @@ nav {
   margin-bottom: 25px;
 }
 
+/* DESENHO DO PACOTE FOIL ALUMINIO 90S */
 .booster-pack {
   position: relative;
-  width: 230px;
-  height: 320px;
-  background: linear-gradient(135deg, #ff007f 0%, #7b1fa2 35%, #00ffff 70%, #ff007f 100%);
-  background-size: 300% 300%;
-  border: 4px solid #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 0 25px rgba(255, 0, 127, 0.9), inset 0 0 20px rgba(255, 255, 255, 0.6);
+  width: 210px;
+  height: 310px;
+  background: linear-gradient(135deg, #12032b 0%, #4a006e 35%, #ff007f 70%, #00ffff 100%);
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 0, 127, 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 22px 15px;
+  padding: 0;
   cursor: pointer;
   user-select: none;
-  animation: foilShift 4s ease infinite;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.booster-pack::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 70%
+  );
+  transform: rotate(25deg);
+  animation: foilShine 4s linear infinite;
+}
+
+.pack-top-crimp,
+.pack-bottom-crimp {
+  width: 100%;
+  height: 18px;
+  background: repeating-linear-gradient(
+    90deg,
+    #222 0px,
+    #222 3px,
+    #666 4px,
+    #888 6px,
+    #222 7px
+  );
+  box-shadow: inset 0 0 5px #000;
+  z-index: 2;
+}
+
+.pack-foil-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px;
+  z-index: 2;
+}
+
+.pack-foil-title {
   font-family: 'Press Start 2P', monospace;
+  font-size: 0.85rem;
+  color: #ffff00;
+  text-shadow: 3px 3px 0 #000, 0 0 10px #ff007f;
+  line-height: 1.3;
+}
+
+.pack-foil-emblem {
+  font-size: 3rem;
+  text-shadow: 0 0 20px #00ffff;
+  filter: drop-shadow(0 0 10px #ff007f);
+}
+
+.pack-foil-sub {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.65rem;
+  color: #00ffff;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 6px 10px;
+  border: 1px solid #00ffff;
+  border-radius: 4px;
 }
 
 .booster-pack:hover {
-  transform: translateY(-12px) scale(1.08);
-  box-shadow: 0 0 45px #00ffff, 0 0 25px #ff007f;
-  animation: foilShift 1.5s ease infinite, hyperShake 0.3s ease infinite;
+  transform: translateY(-12px) scale(1.06) rotate(1deg);
+  box-shadow: 0 15px 35px rgba(0, 255, 255, 0.6), 0 0 30px #ff007f;
 }
 
-.pack-main-title {
-  font-size: 0.95rem;
-  color: #ffff00;
-  text-shadow: 3px 3px 0 #000, 0 0 12px #000;
-  text-align: center;
-  line-height: 1.4;
+/* PALCO DE CERIMÔNIA DE ABERTURA DA LOOTBOX (CEREMONY STAGE) */
+.loot-ceremony-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(3, 1, 10, 0.98);
+  backdrop-filter: blur(15px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 15000;
 }
 
-.pack-cost {
-  font-size: 0.75rem;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.85);
-  border: 2px solid #00ffff;
-  padding: 8px 14px;
-  border-radius: 20px;
-  box-shadow: 0 0 12px #00ffff;
+.loot-ceremony-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
 }
 
-/* OVERLAY DO MODAL DE LOOTBOX */
+.ceremony-pack-stage {
+  position: relative;
+  z-index: 10;
+}
+
+.unboxing-pack {
+  position: relative;
+  width: 240px;
+  height: 350px;
+  background: linear-gradient(135deg, #2b0054 0%, #ff007f 50%, #00ffff 100%);
+  border-radius: 8px;
+  box-shadow: 0 0 50px #ff007f, 0 0 100px #00ffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border: 2px solid #fff;
+}
+
+.unboxing-pack.suspense-shake {
+  animation: extremeShake 0.12s infinite alternate;
+}
+
+.unboxing-pack.tear-open {
+  animation: packTear 0.6s forwards ease-in-out;
+}
+
+.pack-burst-light {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 0 #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.unboxing-pack.tear-open .pack-burst-light {
+  animation: lightExplode 0.7s forwards ease-out;
+}
+
+/* OVERLAY DO MODAL DE REVELAÇÃO */
 .reveal-overlay,
 .inspect-overlay {
   position: fixed;
@@ -282,7 +397,7 @@ nav {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
-  z-index: 9999;
+  z-index: 16000;
   padding: 15px;
   overflow: hidden;
 }
@@ -300,15 +415,15 @@ nav {
   height: 250vh;
   background: repeating-conic-gradient(
     from 0deg,
-    rgba(255, 0, 127, 0.22) 0deg 15deg,
+    rgba(255, 0, 127, 0.25) 0deg 15deg,
     transparent 15deg 30deg
   );
-  animation: rotateSunburst 15s linear infinite;
+  animation: rotateSunburst 12s linear infinite;
   pointer-events: none;
   z-index: 1;
 }
 
-/* CONTAINER CENTRAL DA LOOTBOX DE REVELAÇÃO */
+/* MODAL DE LOOTBOX DE REVELAÇÃO */
 .lootbox-modal {
   position: relative;
   z-index: 10;
@@ -324,7 +439,7 @@ nav {
   max-width: 400px;
   width: 90%;
   text-align: center;
-  animation: lootUnbox 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: cardPopUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 #loot-badge-container {
@@ -397,11 +512,6 @@ nav {
   box-shadow: 0 9px 0 #800040, 0 0 35px #ff007f;
 }
 
-.btn-collect:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #800040;
-}
-
 .inspect-box {
   background: #120826;
   border: 4px solid #00ffff;
@@ -412,19 +522,29 @@ nav {
   max-height: 85vh;
 }
 
-/* ANIMAÇÕES ARCADE DE ALTA DOPAMINA */
-@keyframes foilShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* ANIMAÇÕES DE DOPAMINA E UNBOXING */
+@keyframes foilShine {
+  0% { transform: translateX(-100%) rotate(25deg); }
+  100% { transform: translateX(100%) rotate(25deg); }
 }
 
-@keyframes hyperShake {
-  0% { transform: translateY(-12px) scale(1.08) rotate(-2deg); }
-  25% { transform: translateY(-12px) scale(1.08) rotate(2deg); }
-  50% { transform: translateY(-12px) scale(1.08) rotate(-3deg); }
-  75% { transform: translateY(-12px) scale(1.08) rotate(3deg); }
-  100% { transform: translateY(-12px) scale(1.08) rotate(-2deg); }
+@keyframes extremeShake {
+  0% { transform: scale(1.05) translate(-4px, -4px) rotate(-3deg); }
+  25% { transform: scale(1.08) translate(4px, 3px) rotate(3deg); }
+  50% { transform: scale(1.1) translate(-5px, 2px) rotate(-4deg); }
+  75% { transform: scale(1.12) translate(5px, -3px) rotate(4deg); }
+  100% { transform: scale(1.15) translate(-2px, 5px) rotate(-2deg); }
+}
+
+@keyframes packTear {
+  0% { transform: scale(1.15); clip-path: inset(0 0 0 0); }
+  50% { transform: scale(1.3) rotate(5deg); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes lightExplode {
+  0% { opacity: 1; box-shadow: 0 0 0 0 #ffffff; }
+  100% { opacity: 1; box-shadow: 0 0 300px 200px #ffffff; }
 }
 
 @keyframes rotateSunburst {
@@ -432,9 +552,9 @@ nav {
   to { transform: rotate(360deg); }
 }
 
-@keyframes lootUnbox {
-  0% { transform: scale(0.1) rotate(-20deg); opacity: 0; }
-  70% { transform: scale(1.12) rotate(3deg); opacity: 1; }
+@keyframes cardPopUp {
+  0% { transform: scale(0.1) rotate(-25deg); opacity: 0; }
+  70% { transform: scale(1.1) rotate(3deg); opacity: 1; }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
