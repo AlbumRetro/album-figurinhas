@@ -2,7 +2,8 @@
 const SUPABASE_URL = "https://bysyjbuqdeayxoryrjmj.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_FCdyKbtrv_-59kkIcd9xRg_gtFXE4ny";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Evita conflito de nomes usando supabaseClient
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ESTADO GLOBAL DA APLICAÇÃO
 let currentUser = null;
@@ -12,31 +13,48 @@ let allStickers = [];
 let availablePacks = [];
 
 // INICIALIZAÇÃO
-document.addEventListener("DOMContentLoaded", () => {
-  loginUser();
+document.addEventListener("DOMContentLoaded", async () => {
+  // Check para ver se o utilizador já está autenticado via Google / Supabase Auth
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    await initAuthenticatedUser(session.user);
+  }
 });
 
-// 1. CONEXÃO / LOGIN DO USUÁRIO
-async function loginUser() {
-  const handleInput = document.getElementById("user-handle").value.trim();
-  if (!handleInput) return alert("Informe um YouTube Handle válido!");
+// FUNÇÃO DE LOGIN COM O GOOGLE (Chamada pelo botão do index.html)
+async function loginWithGoogle() {
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.href
+    }
+  });
+  if (error) alert("Erro ao autenticar com o Google: " + error.message);
+}
 
-  // Busca ou cria o perfil no Supabase
-  let { data: profile, error } = await supabase
+// CARREGA O PERFIL DO UTILIZADOR AUTENTICADO
+async function initAuthenticatedUser(authUser) {
+  let { data: profile, error } = await supabaseClient
     .from("profiles")
     .select("*")
-    .eq("youtube_handle", handleInput)
+    .eq("id", authUser.id)
     .single();
 
   if (error && error.code === "PGRST116") {
-    // Perfil não existe -> Criar novo usuário com 1000 pontos padrão
-    const { data: newProfile, error: createError } = await supabase
+    // Perfil não existe -> Criar novo com 1000 pontos padrão
+    const { data: newProfile, error: createError } = await supabaseClient
       .from("profiles")
-      .insert([{ youtube_handle: handleInput, display_name: handleInput, global_points: 1000, role: "user" }])
+      .insert([{ 
+        id: authUser.id,
+        youtube_handle: authUser.email, 
+        display_name: authUser.user_metadata?.full_name || authUser.email, 
+        global_points: 1000, 
+        role: "user" 
+      }])
       .select()
       .single();
 
-    if (createError) return alert("Erro ao criar usuário: " + createError.message);
+    if (createError) return alert("Erro ao criar perfil: " + createError.message);
     profile = newProfile;
   } else if (error) {
     return alert("Erro ao consultar perfil: " + error.message);
@@ -54,11 +72,16 @@ async function loginUser() {
 
 function updateUserRoleUI(role) {
   const roleBadge = document.getElementById("role-badge");
-  roleBadge.innerText = role.toUpperCase();
-  roleBadge.className = `role-badge ${role}`;
+  if (roleBadge) {
+    roleBadge.innerText = role.toUpperCase();
+    roleBadge.className = `role-badge ${role}`;
+  }
 
-  document.getElementById("btn-admin-tab").style.display = (role === "admin" || role === "superadmin") ? "inline-block" : "none";
-  document.getElementById("btn-superadmin-tab").style.display = (role === "superadmin") ? "inline-block" : "none";
+  const btnAdmin = document.getElementById("btn-admin-tab");
+  if (btnAdmin) btnAdmin.style.display = (role === "admin" || role === "superadmin") ? "inline-block" : "none";
+  
+  const btnSuperadmin = document.getElementById("btn-superadmin-tab");
+  if (btnSuperadmin) btnSuperadmin.style.display = (role === "superadmin") ? "inline-block" : "none";
 }
 
 function updatePointsDisplay() {
@@ -66,19 +89,16 @@ function updatePointsDisplay() {
   if (display) display.innerText = `SALDO: ${globalPoints} PONTOS`;
 }
 
-// 2. CARREGAMENTO DE DADOS DO BANCO
+// CARREGAMENTO DE DADOS DO BANCO
 async function loadCatalogAndInventory() {
-  // Carrega catálogo de figurinhas aprovadas
-  const { data: stickers } = await supabase.from("stickers").select("*").eq("is_active", true);
+  const { data: stickers } = await supabaseClient.from("stickers").select("*").eq("is_active", true);
   allStickers = stickers || [];
 
-  // Carrega pacotes da loja
-  const { data: packs } = await supabase.from("packs").select("*").eq("is_active", true);
+  const { data: packs } = await supabaseClient.from("packs").select("*").eq("is_active", true);
   availablePacks = packs || [];
 
-  // Carrega o inventário único do usuário
   if (currentUser) {
-    const { data: inventory } = await supabase
+    const { data: inventory } = await supabaseClient
       .from("user_stickers")
       .select("*")
       .eq("user_id", currentUser.id);
@@ -92,12 +112,13 @@ async function loadCatalogAndInventory() {
   }
 }
 
-// 3. NAVEGAÇÃO ENTRE ABAS
+// NAVEGAÇÃO ENTRE ABAS
 function switchTab(tabName, event) {
   document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("active"));
 
-  document.getElementById(`tab-${tabName}`).classList.add("active");
+  const targetTab = document.getElementById(`tab-${tabName}`);
+  if (targetTab) targetTab.classList.add("active");
   if (event) event.currentTarget.classList.add("active");
 
   if (tabName === "album") renderAlbum();
@@ -105,14 +126,16 @@ function switchTab(tabName, event) {
   if (tabName === "inventory") renderInventory();
 }
 
-// 4. RENDERIZAR MEU ÁLBUM
+// RENDERIZAR MEU ÁLBUM
 function renderAlbum() {
   const grid = document.getElementById("album-grid");
   const status = document.getElementById("album-status");
+  if (!grid) return;
+  
   grid.innerHTML = "";
 
   if (allStickers.length === 0) {
-    status.innerText = "Nenhuma figurinha cadastrada no catálogo global.";
+    if (status) status.innerText = "Nenhuma figurinha cadastrada no catálogo global.";
     return;
   }
 
@@ -134,15 +157,16 @@ function renderAlbum() {
     grid.appendChild(card);
   });
 
-  status.innerText = `Figurinhas coladas: ${coladas} / ${allStickers.length}`;
+  if (status) status.innerText = `Figurinhas coladas: ${coladas} / ${allStickers.length}`;
 }
 
-// 5. RENDERIZAR INVENTÁRIO (REPETIDAS)
+// RENDERIZAR INVENTÁRIO (REPETIDAS)
 function renderInventory() {
   const grid = document.getElementById("inventory-grid");
   const status = document.getElementById("inventory-status");
-  grid.innerHTML = "";
+  if (!grid) return;
 
+  grid.innerHTML = "";
   let totalPossuidas = 0;
 
   allStickers.forEach(sticker => {
@@ -163,15 +187,19 @@ function renderInventory() {
     }
   });
 
-  status.innerText = totalPossuidas === 0 
-    ? "Sua coleção está vazia. Abra pacotes na loja!" 
-    : `Total de figurinhas no seu inventário: ${totalPossuidas}`;
+  if (status) {
+    status.innerText = totalPossuidas === 0 
+      ? "Sua coleção está vazia. Abra pacotes na loja!" 
+      : `Total de figurinhas no seu inventário: ${totalPossuidas}`;
+  }
 }
 
-// 6. LOJA E ABERTURA DE PACOTES
+// LOJA E ABERTURA DE PACOTES
 function renderShop() {
   updatePointsDisplay();
   const container = document.getElementById("packs-container");
+  if (!container) return;
+
   container.innerHTML = "";
 
   if (availablePacks.length === 0) {
@@ -202,26 +230,23 @@ async function buyPack(pack) {
     return alert("Não há figurinhas cadastradas para sorteio.");
   }
 
-  // 1. Deduz os pontos no Supabase e Atualiza localmente
   globalPoints -= pack.cost_points;
   updatePointsDisplay();
 
-  await supabase
+  await supabaseClient
     .from("profiles")
     .update({ global_points: globalPoints })
     .eq("id", currentUser.id);
 
-  // 2. Sorteia uma figurinha do catálogo
   const randomIndex = Math.floor(Math.random() * allStickers.length);
   const drawnSticker = allStickers[randomIndex];
 
   const currentQty = userInventory[drawnSticker.id] || 0;
   const isNew = currentQty === 0;
 
-  // 3. Atualiza o inventário do usuário no banco
   userInventory[drawnSticker.id] = currentQty + 1;
 
-  await supabase
+  await supabaseClient
     .from("user_stickers")
     .upsert({
       user_id: currentUser.id,
@@ -233,12 +258,14 @@ async function buyPack(pack) {
   showRevealModal(drawnSticker, isNew);
 }
 
-// 7. MODAL DE REVELAÇÃO E INSPEÇÃO
+// MODAL DE REVELAÇÃO E INSPEÇÃO
 function showRevealModal(sticker, isNew) {
   const overlay = document.getElementById("reveal-overlay");
   const badgeContainer = document.getElementById("loot-badge-container");
   const container = document.getElementById("revealed-card-container");
   const btnCollect = document.getElementById("btn-collect");
+
+  if (!overlay) return;
 
   badgeContainer.innerHTML = isNew 
     ? `<div class="badge" style="background: #00ffff; color:#000;">★ FIGURINHA NOVA! ★</div>`
@@ -258,12 +285,14 @@ function showRevealModal(sticker, isNew) {
 }
 
 function closeReveal() {
-  document.getElementById("reveal-overlay").classList.remove("active");
+  document.getElementById("reveal-overlay")?.classList.remove("active");
 }
 
 function openInspect(sticker) {
   const overlay = document.getElementById("inspect-overlay");
   const container = document.getElementById("inspect-card-container");
+
+  if (!overlay) return;
 
   container.innerHTML = `
     <div class="inspect-box rarity-${sticker.rarity}">
@@ -277,10 +306,10 @@ function openInspect(sticker) {
 }
 
 function closeInspect() {
-  document.getElementById("inspect-overlay").classList.remove("active");
+  document.getElementById("inspect-overlay")?.classList.remove("active");
 }
 
-// 8. FUNCIONALIDADE DO SUPERADMIN
+// FUNCIONALIDADE DO SUPERADMIN
 async function createStickerBySuperadmin() {
   if (!currentUser || currentUser.role !== "superadmin") {
     return alert("Acesso negado: apenas o Superadmin pode cadastrar e aprovar figurinhas.");
@@ -293,12 +322,12 @@ async function createStickerBySuperadmin() {
 
   if (!id || !title || !imageUrl) return alert("Preencha todos os campos da figurinha!");
 
-  const { error } = await supabase.from("stickers").insert([{
+  const { error } = await supabaseClient.from("stickers").insert([{
     id: id,
     title: title,
     image_url: imageUrl,
     rarity: rarity,
-    channel_id: "00000000-0000-0000-0000-000000000000" // ID genérico ou vinculado ao canal principal
+    channel_id: "00000000-0000-0000-0000-000000000000"
   }]);
 
   if (error) return alert("Erro ao cadastrar figurinha: " + error.message);
