@@ -54,8 +54,20 @@ async function loginWithGoogle() {
   if (error) alert("Erro ao autenticar com o Google: " + error.message);
 }
 
+// LOGOUT DO UTILIZADOR
+async function handleLogout() {
+  await supabaseClient.auth.signOut();
+  window.location.reload();
+}
+
 // CARREGA E INICIALIZA O PERFIL DO USUÁRIO
 async function initAuthenticatedUser(authUser) {
+  // Atualiza o e-mail na barra superior
+  const userEmailDisplay = document.getElementById("user-email-display");
+  if (userEmailDisplay) {
+    userEmailDisplay.innerText = authUser.email;
+  }
+
   let { data: profile, error } = await supabaseClient
     .from("profiles")
     .select("*")
