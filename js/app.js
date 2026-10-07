@@ -13,7 +13,7 @@ buySound.preload = 'auto';
 const lootSound = new Audio(AUDIO_LOOT_URL);
 lootSound.preload = 'auto';
 
-// Função auxiliar com tratamento de erros para garantir a reprodução do áudio
+// Função auxiliar com tratamento de erros para reprodução do áudio
 function playAudio(sound) {
   sound.currentTime = 0;
   const playPromise = sound.play();
@@ -24,7 +24,7 @@ function playAudio(sound) {
   }
 }
 
-// Desbloqueia as permissões de som do navegador na primeira interação na página
+// Desbloqueia as permissões de som do navegador na primeira interação
 document.addEventListener('click', () => {
   buySound.load();
   lootSound.load();
@@ -36,10 +36,10 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 // ESTADO GLOBAL DA APLICAÇÃO
 let currentUser = null;
 let globalPoints = 0;
-let userInventory = {}; // Mapeamento: { 'ZE-001': quantity }
+let userInventory = {};
 let allStickers = [];
 let availablePacks = [];
-let raritiesMap = {}; // Tabela centralizada de pesos: { 'common': 100, 'rare': 30, 'epic': 10, 'legendary': 2 }
+let raritiesMap = {};
 
 // ESTADO DO REVEAL SEQUENCIAL (CARD POR CARD)
 let revealQueue = [];
@@ -54,6 +54,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (session && session.user) {
       hideLoginScreen();
       await initAuthenticatedUser(session.user);
+    } else {
+      showLoginScreen();
     }
   });
 
@@ -61,16 +63,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (session && session.user) {
     hideLoginScreen();
     await initAuthenticatedUser(session.user);
+  } else {
+    showLoginScreen();
   }
 });
 
-// OCULTA TELA DE LOGIN (LOGICA ORIGINAL RESTAURADA)
+// OCULTA / EXIBE TELA DE LOGIN
 function hideLoginScreen() {
-  const loginOverlay = document.getElementById("login-screen") || document.querySelector(".auth-container");
+  const loginOverlay = document.getElementById("login-screen");
   if (loginOverlay) loginOverlay.style.display = "none";
 
   const mainApp = document.getElementById("main-app");
   if (mainApp) mainApp.style.display = "block";
+}
+
+function showLoginScreen() {
+  const loginOverlay = document.getElementById("login-screen");
+  if (loginOverlay) loginOverlay.style.display = "flex";
+
+  const mainApp = document.getElementById("main-app");
+  if (mainApp) mainApp.style.display = "none";
 }
 
 // LOGIN GOOGLE
@@ -230,7 +242,7 @@ function renderAlbum() {
       `;
     } else {
       card.innerHTML = `
-        <img src="${sticker.image_url}" alt="Bloqueado" style="filter: brightness(0) opacity(0.15);">
+        <img src="${sticker.image_url}" alt="Bloqueado">
         <div class="card-title">#${sticker.id}</div>
       `;
     }
@@ -284,7 +296,7 @@ function renderShop() {
   container.innerHTML = "";
 
   if (availablePacks.length === 0) {
-    container.innerHTML = "<p style='color: #aaa;'>Nenhum pacote disponível na loja no momento.</p>";
+    container.innerHTML = "<p class='status-text'>Nenhum pacote disponível na loja no momento.</p>";
     return;
   }
 
@@ -548,7 +560,7 @@ function showCurrentQueueCard() {
   container.innerHTML = `
     <div class="large-card rarity-${currentItem.sticker.rarity}">
       <img src="${currentItem.sticker.image_url}" alt="${currentItem.sticker.title}">
-      <div class="card-title" style="color: #00ffff; margin-top: 12px; font-family:'Press Start 2P'; font-size: 0.85rem;">#${currentItem.sticker.id} - ${currentItem.sticker.title}</div>
+      <div class="card-title">#${currentItem.sticker.id} - ${currentItem.sticker.title}</div>
     </div>
   `;
 
@@ -591,8 +603,8 @@ function openInspect(sticker) {
   container.innerHTML = `
     <div class="inspect-box rarity-${sticker.rarity}">
       <img src="${sticker.image_url}" alt="${sticker.title}">
-      <div class="card-title" style="color: #00ffff; margin-top: 12px; font-family:'Press Start 2P'; font-size: 0.85rem;">#${sticker.id} - ${sticker.title}</div>
-      <p style="color: #aaa; font-size: 0.75rem; margin-top: 8px;">Raridade: ${sticker.rarity.toUpperCase()}</p>
+      <div class="card-title">#${sticker.id} - ${sticker.title}</div>
+      <p class="inspect-rarity-text">Raridade: ${sticker.rarity.toUpperCase()}</p>
     </div>
   `;
 
