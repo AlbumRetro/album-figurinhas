@@ -4,7 +4,7 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #090610;
+  background: #06020e;
   color: #fff;
   margin: 0;
   padding: 15px;
@@ -12,15 +12,17 @@ body {
   overflow-x: hidden;
 }
 
-h1 {
+/* TÍTULO GLITCH ARCADE */
+h1.glitch-title {
   font-family: 'Press Start 2P', monospace;
-  font-size: 1.4rem;
-  color: #ff007f;
-  text-shadow: 4px 4px 0 #000, 0 0 15px rgba(255, 0, 127, 0.7);
-  margin-bottom: 15px;
+  font-size: 1.5rem;
+  color: #fff;
+  text-shadow: 3px 3px 0 #ff007f, -3px -3px 0 #00ffff, 0 0 15px #ff007f;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
 }
 
-/* FLASH OVERLAY PARA ABERTURA DE PACOTE */
+/* FLASH DE REVELAÇÃO DE ALTA INTENSIDADE */
 .flash-overlay {
   position: fixed;
   top: 0;
@@ -31,11 +33,11 @@ h1 {
   z-index: 10000;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease-out;
+  transition: opacity 0.1s ease-out;
 }
 
 .flash-overlay.active {
-  opacity: 0.9;
+  opacity: 1;
 }
 
 /* USER BAR & LOGIN */
@@ -43,12 +45,12 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #150d2a;
+  background: #120826;
   padding: 10px 20px;
   border-radius: 8px;
   margin-bottom: 20px;
-  border: 1px solid #ff007f;
-  box-shadow: 0 0 10px rgba(255, 0, 127, 0.3);
+  border: 2px solid #ff007f;
+  box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
 }
 
 .role-badge {
@@ -70,42 +72,44 @@ h1 {
   font-family: 'Press Start 2P', monospace;
   font-size: 0.65rem;
   cursor: pointer;
+  box-shadow: 0 0 10px #ff007f;
 }
 
-/* NAVEGAÇÃO */
+/* NAVEGAÇÃO RETRÔ */
 nav {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 25px;
+  gap: 12px;
+  margin-bottom: 30px;
 }
 
 .nav-btn {
-  background: #180f33;
+  background: #1a0a3a;
   color: #aaa;
   border: 2px solid #ff007f;
-  padding: 10px 18px;
+  padding: 12px 20px;
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
   font-size: 0.85rem;
   transition: all 0.2s;
+  box-shadow: 0 4px 0 #800040;
 }
 
 .nav-btn.active,
 .nav-btn:hover {
   background: #00ffff;
-  color: #121212;
-  border-color: #00ffff;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+  color: #000;
+  border-color: #ffffff;
+  box-shadow: 0 0 25px #00ffff, 0 4px 0 #008888;
   transform: translateY(-2px);
 }
 
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* GRID RESPONSIVO */
+/* GRID RESPONSIVO DE ÁLBUM */
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(260px, 320px));
@@ -124,13 +128,13 @@ nav {
   .grid { grid-template-columns: minmax(240px, 1fr); gap: 20px; }
 }
 
-/* CARDS DE FIGURINHAS */
+/* CARDS DO ÁLBUM */
 .card {
   border: 3px solid #ff007f;
   border-radius: 16px;
   padding: 14px;
-  background: #150d2a;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+  background: #120826;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
   position: relative;
   cursor: pointer;
   transition: transform 0.28s ease, box-shadow 0.28s ease;
@@ -141,22 +145,36 @@ nav {
 
 .card:hover {
   transform: translateY(-8px) scale(1.05);
-  box-shadow: 0 15px 30px rgba(0, 255, 255, 0.7);
+  box-shadow: 0 0 30px #00ffff;
   border-color: #00ffff;
   z-index: 10;
 }
 
 .card.rarity-comum, .card.rarity-common { border-color: #555; }
-.card.rarity-rara, .card.rarity-rare { border-color: #2196f3; box-shadow: 0 0 12px rgba(33, 150, 243, 0.6); }
-.card.rarity-ultra_rara, .card.rarity-epic { border-color: #9c27b0; box-shadow: 0 0 18px rgba(156, 39, 176, 0.8); }
-.card.rarity-edicao_limitada, .card.rarity-legendary { border-color: #ff9800; box-shadow: 0 0 25px rgba(255, 152, 0, 1); }
+.card.rarity-rara, .card.rarity-rare { border-color: #2196f3; box-shadow: 0 0 15px rgba(33, 150, 243, 0.8); }
+.card.rarity-ultra_rara, .card.rarity-epic { border-color: #9c27b0; box-shadow: 0 0 22px rgba(156, 39, 176, 0.9); }
+.card.rarity-edicao_limitada, .card.rarity-legendary { border-color: #ff9800; box-shadow: 0 0 30px #ff9800; }
+
+.card.locked {
+  background: #090314;
+  border-style: dashed;
+  border-color: #444;
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.card.locked:hover {
+  transform: none;
+  box-shadow: none;
+}
+.card.locked img { filter: brightness(0) opacity(0.2); }
+.card.locked .card-title { color: #555; }
 
 .card img {
   width: 100%;
   aspect-ratio: 3 / 4;
   object-fit: contain;
   border-radius: 10px;
-  background-color: #050505;
+  background-color: #000;
   image-rendering: pixelated;
 }
 
@@ -168,7 +186,22 @@ nav {
   font-family: 'Press Start 2P', monospace;
 }
 
-/* PACOTES DE LOOT BOX (FOIL / HOLOGRAMA RETRÔ COM DOPAMINA) */
+.badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #ffff00;
+  color: #000;
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 2px solid #000;
+  box-shadow: 0 0 10px #ffff00;
+  z-index: 2;
+}
+
+/* PACOTES DE LOOT BOX (BOOSTER FOIL HOLOGRAM) */
 .shop-container {
   display: flex;
   flex-direction: column;
@@ -177,62 +210,62 @@ nav {
 
 .points-display {
   font-family: 'Press Start 2P', monospace;
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: #ffff00;
-  background: #180f33;
-  border: 2px solid #ffff00;
-  box-shadow: 0 0 15px rgba(255, 255, 0, 0.5);
-  padding: 12px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
+  background: #180a38;
+  border: 3px solid #ffff00;
+  box-shadow: 0 0 20px rgba(255, 255, 0, 0.6);
+  padding: 14px 24px;
+  border-radius: 10px;
+  margin-bottom: 25px;
 }
 
 .booster-pack {
   position: relative;
-  width: 220px;
-  height: 310px;
-  background: linear-gradient(135deg, #ff007f 0%, #7b1fa2 40%, #00ffff 80%, #ff007f 100%);
+  width: 230px;
+  height: 320px;
+  background: linear-gradient(135deg, #ff007f 0%, #7b1fa2 35%, #00ffff 70%, #ff007f 100%);
   background-size: 300% 300%;
-  border: 4px solid #fff;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(255, 0, 127, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.5);
+  border: 4px solid #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 0 25px rgba(255, 0, 127, 0.9), inset 0 0 20px rgba(255, 255, 255, 0.6);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 12px;
+  padding: 22px 15px;
   cursor: pointer;
   user-select: none;
-  animation: foilGlow 6s ease infinite;
+  animation: foilShift 4s ease infinite;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   font-family: 'Press Start 2P', monospace;
 }
 
 .booster-pack:hover {
-  transform: translateY(-10px) scale(1.08) rotate(-1deg);
-  box-shadow: 0 0 35px #00ffff, 0 0 15px #ff007f;
-  animation: foilGlow 2s ease infinite, packShake 0.4s ease infinite;
+  transform: translateY(-12px) scale(1.08);
+  box-shadow: 0 0 45px #00ffff, 0 0 25px #ff007f;
+  animation: foilShift 1.5s ease infinite, hyperShake 0.3s ease infinite;
 }
 
 .pack-main-title {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #ffff00;
-  text-shadow: 2px 2px 0 #000, 0 0 10px #000;
+  text-shadow: 3px 3px 0 #000, 0 0 12px #000;
   text-align: center;
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
 .pack-cost {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: #fff;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
   border: 2px solid #00ffff;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 20px;
-  box-shadow: 0 0 10px #00ffff;
+  box-shadow: 0 0 12px #00ffff;
 }
 
-/* EFEITOS GLAMOUR DO MODAL DE REVELAÇÃO */
+/* OVERLAY DO MODAL DE LOOTBOX */
 .reveal-overlay,
 .inspect-overlay {
   position: fixed;
@@ -240,8 +273,8 @@ nav {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(5, 2, 15, 0.95);
-  backdrop-filter: blur(12px);
+  background: rgba(4, 1, 12, 0.96);
+  backdrop-filter: blur(14px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -260,22 +293,22 @@ nav {
   pointer-events: auto;
 }
 
-/* RAIOS GIRATÓRIOS RETRÔ (SUNBURST) */
+/* SUNBURST RAYS (RAIOS SOLARES ARCADE) */
 .sunburst-rays {
   position: absolute;
-  width: 200vw;
-  height: 200vh;
+  width: 250vw;
+  height: 250vh;
   background: repeating-conic-gradient(
     from 0deg,
-    rgba(255, 0, 127, 0.15) 0deg 15deg,
+    rgba(255, 0, 127, 0.22) 0deg 15deg,
     transparent 15deg 30deg
   );
-  animation: rotateSunburst 20s linear infinite;
+  animation: rotateSunburst 15s linear infinite;
   pointer-events: none;
   z-index: 1;
 }
 
-/* CAIXA DE LOOTBOX DE REVELAÇÃO CENTRALIZADA */
+/* CONTAINER CENTRAL DA LOOTBOX DE REVELAÇÃO */
 .lootbox-modal {
   position: relative;
   z-index: 10;
@@ -283,20 +316,20 @@ nav {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(20, 10, 40, 0.95);
+  background: rgba(18, 6, 38, 0.95);
   border: 4px solid #00ffff;
-  box-shadow: 0 0 40px #00ffff, inset 0 0 20px rgba(0, 255, 255, 0.5);
-  padding: 30px 20px;
-  border-radius: 20px;
+  box-shadow: 0 0 50px #00ffff, inset 0 0 30px rgba(0, 255, 255, 0.6);
+  padding: 30px 22px;
+  border-radius: 22px;
   max-width: 400px;
   width: 90%;
   text-align: center;
-  animation: popInReveal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: lootUnbox 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 #loot-badge-container {
   position: relative;
-  margin-bottom: 15px;
+  margin-bottom: 18px;
   z-index: 5;
   width: 100%;
   display: flex;
@@ -308,29 +341,29 @@ nav {
   top: 0;
   right: 0;
   display: inline-block;
-  padding: 10px 20px;
+  padding: 10px 22px;
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   border-radius: 8px;
   font-weight: bold;
   color: #000;
   background: #ffff00;
-  box-shadow: 0 0 20px #ffff00;
-  animation: pulseBadge 1s infinite alternate;
+  box-shadow: 0 0 25px #ffff00;
+  animation: badgeGlow 0.8s infinite alternate;
 }
 
 .large-card {
   position: relative;
-  background: #181818;
+  background: #120826;
   border: 4px solid #ff007f;
-  box-shadow: 0 0 35px #ff007f;
+  box-shadow: 0 0 40px #ff007f;
   border-radius: 16px;
   padding: 12px;
   width: 100%;
   max-width: 280px;
   margin: 0 auto;
   z-index: 2;
-  animation: cardGlowPulse 2s ease-in-out infinite alternate;
+  animation: cardPulse 1.5s ease-in-out infinite alternate;
 }
 
 .large-card img,
@@ -348,50 +381,50 @@ nav {
   margin-top: 25px;
   background: #ff007f;
   color: #fff;
-  border: 3px solid #fff;
-  padding: 14px 28px;
-  font-size: 0.8rem;
+  border: 3px solid #ffffff;
+  padding: 15px 30px;
+  font-size: 0.85rem;
   font-family: 'Press Start 2P', monospace;
   cursor: pointer;
-  border-radius: 8px;
-  box-shadow: 0 5px 0 #99004d, 0 0 20px rgba(255, 0, 127, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 6px 0 #800040, 0 0 25px rgba(255, 0, 127, 1);
   transition: all 0.15s ease;
   z-index: 5;
 }
 
 .btn-collect:hover {
-  transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 8px 0 #99004d, 0 0 30px #ff007f;
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 9px 0 #800040, 0 0 35px #ff007f;
 }
 
 .btn-collect:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 #99004d;
+  box-shadow: 0 2px 0 #800040;
 }
 
 .inspect-box {
-  background: #181818;
+  background: #120826;
   border: 4px solid #00ffff;
-  box-shadow: 0 0 25px #00ffff;
+  box-shadow: 0 0 30px #00ffff;
   border-radius: 18px;
   padding: 16px;
   max-width: 90vw;
   max-height: 85vh;
 }
 
-/* ANIMAÇÕES GLAMOUR RETRÔ */
-@keyframes foilGlow {
+/* ANIMAÇÕES ARCADE DE ALTA DOPAMINA */
+@keyframes foilShift {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
-@keyframes packShake {
-  0% { transform: translateY(-10px) scale(1.08) rotate(-1deg); }
-  25% { transform: translateY(-10px) scale(1.08) rotate(1deg); }
-  50% { transform: translateY(-10px) scale(1.08) rotate(-2deg); }
-  75% { transform: translateY(-10px) scale(1.08) rotate(2deg); }
-  100% { transform: translateY(-10px) scale(1.08) rotate(-1deg); }
+@keyframes hyperShake {
+  0% { transform: translateY(-12px) scale(1.08) rotate(-2deg); }
+  25% { transform: translateY(-12px) scale(1.08) rotate(2deg); }
+  50% { transform: translateY(-12px) scale(1.08) rotate(-3deg); }
+  75% { transform: translateY(-12px) scale(1.08) rotate(3deg); }
+  100% { transform: translateY(-12px) scale(1.08) rotate(-2deg); }
 }
 
 @keyframes rotateSunburst {
@@ -399,20 +432,20 @@ nav {
   to { transform: rotate(360deg); }
 }
 
-@keyframes popInReveal {
-  0% { transform: scale(0.2) rotate(-10deg); opacity: 0; }
-  80% { transform: scale(1.08) rotate(2deg); opacity: 1; }
+@keyframes lootUnbox {
+  0% { transform: scale(0.1) rotate(-20deg); opacity: 0; }
+  70% { transform: scale(1.12) rotate(3deg); opacity: 1; }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
-@keyframes pulseBadge {
-  0% { transform: scale(0.95); box-shadow: 0 0 10px #ffff00; }
-  100% { transform: scale(1.08); box-shadow: 0 0 25px #ffff00; }
+@keyframes badgeGlow {
+  0% { transform: scale(0.95); box-shadow: 0 0 15px #ffff00; }
+  100% { transform: scale(1.1); box-shadow: 0 0 35px #ffff00; }
 }
 
-@keyframes cardGlowPulse {
-  0% { box-shadow: 0 0 20px #ff007f; }
-  100% { box-shadow: 0 0 45px #00ffff, 0 0 20px #ff007f; }
+@keyframes cardPulse {
+  0% { box-shadow: 0 0 25px #ff007f; }
+  100% { box-shadow: 0 0 50px #00ffff, 0 0 25px #ff007f; }
 }
 
 /* AUTENTICAÇÃO */
@@ -425,13 +458,13 @@ nav {
 }
 
 .auth-box {
-  background: #150d2a;
+  background: #120826;
   border: 3px solid #00ffff;
   border-radius: 16px;
   padding: 30px 20px;
   max-width: 400px;
   width: 100%;
-  box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 35px rgba(0, 255, 255, 0.6);
 }
 
 .auth-error {
