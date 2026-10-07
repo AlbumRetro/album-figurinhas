@@ -6,8 +6,29 @@ const SUPABASE_ANON_KEY = "sb_publishable_FCdyKbtrv_-59kkIcd9xRg_gtFXE4ny";
 const AUDIO_BUY_URL = 'https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/compra.mp3';
 const AUDIO_LOOT_URL = 'https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/loot.mp3';
 
+// Instâncias Globais dos Áudios com Pré-carregamento ativado
 const buySound = new Audio(AUDIO_BUY_URL);
+buySound.preload = 'auto';
+
 const lootSound = new Audio(AUDIO_LOOT_URL);
+lootSound.preload = 'auto';
+
+// Função auxiliar com tratamento de erros para garantir a reprodução do áudio
+function playAudio(sound) {
+  sound.currentTime = 0;
+  const playPromise = sound.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(error => {
+      console.warn("Autoplay bloqueado pelo navegador ou erro ao carregar áudio:", error);
+    });
+  }
+}
+
+// Desbloqueia as permissões de som do navegador na primeira interação na página
+document.addEventListener('click', () => {
+  buySound.load();
+  lootSound.load();
+}, { once: true });
 
 // Instância do cliente Supabase
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -281,29 +302,28 @@ async function startUnboxingCeremony(pack) {
     return alert("Não há figurinhas cadastradas para sorteio.");
   }
 
-  // 1. Debita pontos
-  globalPoints -= pack.cost_points;
-  updatePointsDisplay();
-
-  await supabaseClient
-    .from("profiles")
-    .update({ global_points: globalPoints })
-    .eq("id", currentUser.id);
-
-  // 2. Prepara os elementos da Cerimônia de Unboxing
+  // 1. Prepara os elementos da Cerimônia de Unboxing
   const ceremonyOverlay = document.getElementById("loot-ceremony-overlay");
   const ceremonyPackTitle = document.getElementById("ceremony-pack-title");
   const unboxingPack = document.querySelector(".unboxing-pack");
 
   if (ceremonyPackTitle) ceremonyPackTitle.innerText = pack.pack_name.toUpperCase();
 
-  // 3. Ativa o palco da cerimônia e INICIA O TREME-TREME do pacote
+  // 2. Ativa o palco da cerimônia e INICIA O TREME-TREME do pacote
   unboxingPack.className = "unboxing-pack suspense-shake";
   ceremonyOverlay.classList.add("active");
 
-  // 🎵 SOM DE COMPRA: Toca exatamente ao começar a tremer!
-  buySound.currentTime = 0;
-  buySound.play().catch(err => console.log("Erro ao reproduzir som de compra:", err));
+  // 🎵 SOM DE COMPRA: Disparado INSTANTANEAMENTE ao começar a tremer!
+  playAudio(buySound);
+
+  // 3. Debita pontos no banco de dados em segundo plano
+  globalPoints -= pack.cost_points;
+  updatePointsDisplay();
+
+  supabaseClient
+    .from("profiles")
+    .update({ global_points: globalPoints })
+    .eq("id", currentUser.id);
 
   // ETAPA 1 (0.0s - 2.0s): Tremores frenéticos e acúmulo de energia neon
   setTimeout(() => {
@@ -339,9 +359,8 @@ async function startUnboxingCeremony(pack) {
         updated_at: new Date().toISOString()
       }, { onConflict: "user_id, sticker_id" });
 
-    // 🎵 SOM DE LOOTBOX: Toca na revelação da figurinha
-    lootSound.currentTime = 0;
-    lootSound.play().catch(err => console.log("Erro ao reproduzir som de loot:", err));
+    // 🎵 SOM DE LOOTBOX: Disparado na revelação da figurinha
+    playAudio(lootSound);
 
     // Fecha a cerimônia de unboxing e abre a revelação
     ceremonyOverlay.classList.remove("active");
