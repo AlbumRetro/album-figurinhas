@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Álbum de Figurinhas Retrô</title>
 
+    <!-- Fontes e Dependências Externas -->
     <link
       href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
       rel="stylesheet"
@@ -12,7 +13,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <link rel="stylesheet" href="css/style.css" />
+    <!-- Folha de Estilos Unificada com Cache Busting -->
+    <link rel="stylesheet" href="css/style.css?v=3.0" />
   </head>
   <body>
     <!-- Flash Overlay de Alta Intensidade -->
@@ -197,6 +199,7 @@
       </div>
     </div>
 
-    <script src="js/app.js"></script>
+    <!-- Script carregado estritamente no final do BODY após a árvore DOM existir -->
+    <script src="js/app.js?v=3.0"></script>
   </body>
 </html>
