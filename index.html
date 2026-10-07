@@ -18,7 +18,7 @@
     <link rel="preload" href="https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/loot.mp3" as="audio" />
 
     <!-- Folha de Estilos Unificada com Cache Busting -->
-    <link rel="stylesheet" href="css/style.css?v=3.1" />
+    <link rel="stylesheet" href="css/style.css?v=3.2" />
   </head>
   <body>
     <!-- Flash Overlay de Alta Intensidade -->
@@ -28,22 +28,13 @@
     <div id="login-screen" class="auth-container">
       <div class="auth-box">
         <h1 class="glitch-title">ÁLBUM RETRÔ</h1>
-        <p
-          style="
-            color: #00ffff;
-            font-family: 'Press Start 2P';
-            font-size: 0.75rem;
-            margin-bottom: 20px;
-            line-height: 1.4;
-          "
-        >
+        <p class="auth-subtitle">
           Entre com sua conta Google para salvar seu progresso online
         </p>
 
         <div class="auth-buttons">
           <button
-            class="nav-btn active"
-            style="width: 100%; padding: 15px; font-size: 0.85rem"
+            class="nav-btn active btn-google"
             onclick="loginWithGoogle()"
           >
             🚀 ENTRAR COM O GOOGLE
@@ -55,19 +46,12 @@
     </div>
 
     <!-- CONTEÚDO PRINCIPAL -->
-    <div id="main-app" style="display: none">
+    <div id="main-app" class="main-app-container">
       <div class="user-bar">
-        <span
-          id="user-email-display"
-          style="
-            color: #00ffff;
-            font-size: 0.8rem;
-            font-family: 'Press Start 2P';
-          "
-        ></span>
+        <span id="user-email-display" class="user-email-text"></span>
         <div>
           <span id="role-badge" class="role-badge user">USER</span>
-          <button class="reset-btn" style="margin-left: 15px;" onclick="handleLogout()">
+          <button class="reset-btn logout-btn" onclick="handleLogout()">
             Sair 🚪
           </button>
         </div>
@@ -85,17 +69,17 @@
         <button class="nav-btn" onclick="switchTab('inventory', event)">
           Inventário / Repetidas 📦
         </button>
-        <button id="btn-admin-tab" class="nav-btn" style="display: none;" onclick="switchTab('admin', event)">
+        <button id="btn-admin-tab" class="nav-btn btn-hidden" onclick="switchTab('admin', event)">
           Painel Admin
         </button>
-        <button id="btn-superadmin-tab" class="nav-btn" style="display: none;" onclick="switchTab('superadmin', event)">
+        <button id="btn-superadmin-tab" class="nav-btn btn-hidden" onclick="switchTab('superadmin', event)">
           SuperAdmin
         </button>
       </nav>
 
       <!-- ABA 1: ÁLBUM -->
       <div id="tab-album" class="tab-content active">
-        <p id="album-status" style="font-size: 1rem; color: #aaa">
+        <p id="album-status" class="status-text">
           Carregando álbum...
         </p>
         <div id="album-grid" class="grid"></div>
@@ -107,21 +91,14 @@
           <div id="points-display" class="points-display">
             SALDO: 1000 PONTOS
           </div>
-          <h2
-            style="
-              font-family: 'Press Start 2P';
-              font-size: 0.95rem;
-              color: #00ffff;
-              margin: 15px 0 10px 0;
-            "
-          >
+          <h2 class="section-subtitle">
             BOOSTER PACKS HOLOGRAM
           </h2>
-          <p style="color: #aaa; margin-bottom: 20px; font-size: 0.85rem">
+          <p class="status-text">
             Clique no pacote aluminum foil para iniciar a cerimônia de abertura!
           </p>
 
-          <div id="packs-container" class="pack-wrapper" style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; padding: 20px 0;">
+          <div id="packs-container" class="pack-wrapper">
             <!-- Renderizado dinamicamente pelo renderShop() -->
           </div>
         </div>
@@ -129,31 +106,29 @@
 
       <!-- ABA 3: INVENTÁRIO -->
       <div id="tab-inventory" class="tab-content">
-        <h2
-          style="font-family: 'Press Start 2P'; font-size: 1rem; color: #00ffff; margin-bottom: 10px;"
-        >
+        <h2 class="section-title">
           Minha Coleção Completa
         </h2>
-        <p id="inventory-status" style="font-size: 0.95rem; color: #aaa"></p>
+        <p id="inventory-status" class="status-text"></p>
         <div id="inventory-grid" class="grid"></div>
       </div>
 
       <!-- ABA 4: PAINEL SUPERADMIN -->
       <div id="tab-superadmin" class="tab-content">
-        <h2 style="font-family: 'Press Start 2P'; font-size: 1rem; color: #00ffff; margin-bottom: 15px;">
+        <h2 class="section-title">
           Cadastrar Nova Figurinha
         </h2>
-        <div style="display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin: 0 auto; text-align: left;">
-          <input type="text" id="sticker-id" placeholder="ID da Figurinha (ex: 006)" style="padding: 10px;" />
-          <input type="text" id="sticker-title" placeholder="Título/Nome" style="padding: 10px;" />
-          <input type="text" id="sticker-url" placeholder="URL da Imagem" style="padding: 10px;" />
-          <select id="sticker-rarity" style="padding: 10px;">
+        <div class="form-container">
+          <input type="text" id="sticker-id" placeholder="ID da Figurinha (ex: 006)" class="form-input" />
+          <input type="text" id="sticker-title" placeholder="Título/Nome" class="form-input" />
+          <input type="text" id="sticker-url" placeholder="URL da Imagem" class="form-input" />
+          <select id="sticker-rarity" class="form-input">
             <option value="common">Comum</option>
             <option value="rare">Rara</option>
             <option value="epic">Épica</option>
             <option value="legendary">Lendária</option>
           </select>
-          <button class="nav-btn active" onclick="createStickerBySuperadmin()" style="padding: 12px; margin-top: 10px;">
+          <button class="nav-btn active btn-submit" onclick="createStickerBySuperadmin()">
             Salvar Figurinha
           </button>
         </div>
@@ -168,7 +143,7 @@
             <div class="pack-foil-body">
               <div class="pack-foil-title" id="ceremony-pack-title">BOOSTER PACK</div>
               <div class="pack-foil-emblem">⚡</div>
-              <div class="pack-foil-sub">1 FIGURINHA</div>
+              <div class="pack-foil-sub" id="ceremony-pack-sub">UNBOXING...</div>
             </div>
             <div class="pack-bottom-crimp"></div>
             <div class="pack-burst-light"></div>
@@ -197,13 +172,13 @@
         onclick="closeInspect()"
       >
         <div id="inspect-card-container"></div>
-        <p style="color: #aaa; margin-top: 12px; font-size: 0.8rem">
+        <p class="inspect-hint">
           (Clique em qualquer lugar para fechar)
         </p>
       </div>
     </div>
 
     <!-- Script com versão incrementada para evitar cache antigo -->
-    <script src="js/app.js?v=3.1"></script>
+    <script src="js/app.js?v=3.2"></script>
   </body>
 </html>
