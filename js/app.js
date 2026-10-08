@@ -104,52 +104,41 @@ async function handleLogout() {
 
 // INICIALIZA USUÁRIO AUTENTICADO
 async function initAuthenticatedUser(authUser) {
-  // Obtém o nome vindo do Google Auth (full_name ou name) ou fallback para usuario antes do @
-  const googleName = authUser.user_metadata?.full_name || authUser.user_metadata?.name;
-  const fallbackUsername = authUser.email ? authUser.email.split("@")[0] : "Usuário";
-  const userDisplayName = googleName || fallbackUsername;
-
+  // Consulta diretamente o registro da tabela profiles
   let { data: profile, error } = await supabaseClient
     .from("profiles")
     .select("*")
     .eq("id", authUser.id)
     .maybeSingle();
 
+  // Se não existir o registro no banco, cria usando os metadados do Google
   if (!profile) {
+    const googleName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email;
     const { data: newProfile, error: createError } = await supabaseClient
       .from("profiles")
       .upsert([{ 
         id: authUser.id,
         youtube_handle: authUser.email, 
-        display_name: userDisplayName, 
+        display_name: googleName, 
         global_points: 1000, 
         role: "user" 
       }], { onConflict: "id" })
       .select()
       .single();
 
-    if (createError) return alert("Erro ao criar/atualizar perfil: " + createError.message);
+    if (createError) return alert("Erro ao criar perfil: " + createError.message);
     profile = newProfile;
   } else if (error) {
     return alert("Erro ao consultar perfil: " + error.message);
-  } else {
-    // Se o perfil existe mas contiver e-mail no display_name, atualiza no banco com o nome real
-    if (!profile.display_name || profile.display_name.includes("@")) {
-      await supabaseClient
-        .from("profiles")
-        .update({ display_name: userDisplayName })
-        .eq("id", authUser.id);
-      profile.display_name = userDisplayName;
-    }
   }
 
   currentUser = profile;
   globalPoints = profile.global_points;
 
-  // Exibe APENAS o Nome de Exibição no topo da página
+  // Exibe estritamente o display_name cadastrado no banco de dados
   const userDisplay = document.getElementById("user-email-display");
   if (userDisplay) {
-    userDisplay.innerText = profile.display_name || userDisplayName;
+    userDisplay.innerText = profile.display_name;
   }
 
   updateUserRoleUI(profile.role);
