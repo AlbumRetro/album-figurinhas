@@ -104,6 +104,11 @@ async function handleLogout() {
 
 // INICIALIZA USUÁRIO AUTENTICADO
 async function initAuthenticatedUser(authUser) {
+  // Obtém o nome vindo do Google Auth (full_name ou name) ou fallback para usuario antes do @
+  const googleName = authUser.user_metadata?.full_name || authUser.user_metadata?.name;
+  const fallbackUsername = authUser.email ? authUser.email.split("@")[0] : "Usuário";
+  const userDisplayName = googleName || fallbackUsername;
+
   let { data: profile, error } = await supabaseClient
     .from("profiles")
     .select("*")
@@ -116,7 +121,7 @@ async function initAuthenticatedUser(authUser) {
       .upsert([{ 
         id: authUser.id,
         youtube_handle: authUser.email, 
-        display_name: authUser.user_metadata?.full_name || authUser.email, 
+        display_name: userDisplayName, 
         global_points: 1000, 
         role: "user" 
       }], { onConflict: "id" })
@@ -127,15 +132,24 @@ async function initAuthenticatedUser(authUser) {
     profile = newProfile;
   } else if (error) {
     return alert("Erro ao consultar perfil: " + error.message);
+  } else {
+    // Se o perfil existe mas contiver e-mail no display_name, atualiza no banco com o nome real
+    if (!profile.display_name || profile.display_name.includes("@")) {
+      await supabaseClient
+        .from("profiles")
+        .update({ display_name: userDisplayName })
+        .eq("id", authUser.id);
+      profile.display_name = userDisplayName;
+    }
   }
 
   currentUser = profile;
   globalPoints = profile.global_points;
 
-  // Exibe o Nome do Usuário no topo da página
+  // Exibe APENAS o Nome de Exibição no topo da página
   const userDisplay = document.getElementById("user-email-display");
   if (userDisplay) {
-    userDisplay.innerText = profile.display_name || authUser.user_metadata?.full_name || authUser.email;
+    userDisplay.innerText = profile.display_name || userDisplayName;
   }
 
   updateUserRoleUI(profile.role);
