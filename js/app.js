@@ -104,9 +104,6 @@ async function handleLogout() {
 
 // INICIALIZA USUÁRIO AUTENTICADO
 async function initAuthenticatedUser(authUser) {
-  const userEmailDisplay = document.getElementById("user-email-display");
-  if (userEmailDisplay) userEmailDisplay.innerText = authUser.email;
-
   let { data: profile, error } = await supabaseClient
     .from("profiles")
     .select("*")
@@ -135,6 +132,12 @@ async function initAuthenticatedUser(authUser) {
   currentUser = profile;
   globalPoints = profile.global_points;
 
+  // Exibe o Nome do Usuário no topo da página
+  const userDisplay = document.getElementById("user-email-display");
+  if (userDisplay) {
+    userDisplay.innerText = profile.display_name || authUser.user_metadata?.full_name || authUser.email;
+  }
+
   updateUserRoleUI(profile.role);
   updatePointsDisplay();
 
@@ -143,12 +146,6 @@ async function initAuthenticatedUser(authUser) {
 }
 
 function updateUserRoleUI(role) {
-  const roleBadge = document.getElementById("role-badge");
-  if (roleBadge) {
-    roleBadge.innerText = role.toUpperCase();
-    roleBadge.className = `role-badge ${role}`;
-  }
-
   const btnAdmin = document.getElementById("btn-admin-tab");
   if (btnAdmin) btnAdmin.style.display = (role === "admin" || role === "superadmin") ? "inline-block" : "none";
 
