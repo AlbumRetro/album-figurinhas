@@ -18,7 +18,7 @@
     <link rel="preload" href="https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/loot.mp3" as="audio" />
 
     <!-- Folha de Estilos Unificada com Cache Busting -->
-    <link rel="stylesheet" href="css/style.css?v=3.5" />
+    <link rel="stylesheet" href="css/style.css?v=4.0" />
   </head>
   <body>
     <!-- Flash Overlay de Alta Intensidade -->
@@ -179,10 +179,11 @@
       <!-- MODAL DE ERRO / AVISO GAMIFICADO -->
       <div id="game-alert-overlay" class="reveal-overlay">
         <div class="lootbox-modal alert-box">
-          <div class="badge badge-duplicate">⚠️ ATENÇÃO</div>
-          <h3 id="game-alert-title" class="section-subtitle">OPERAÇÃO BLOQUEADA</h3>
-          <p id="game-alert-message" class="inspect-hint" style="color: #fff; margin: 15px 0;"></p>
-          <button class="nav-btn active btn-submit" onclick="closeGameAlert()">ENTENDIDO</button>
+          <div class="badge alert-header-badge">⚠️ ATENÇÃO</div>
+          <div class="alert-defeat-icon">💀</div>
+          <h3 id="game-alert-title" class="alert-title-text">SALDO INSUFICIENTE</h3>
+          <p id="game-alert-message" class="alert-message-text"></p>
+          <button class="alert-btn-ok" onclick="closeGameAlert()">ENTENDIDO [OK]</button>
         </div>
       </div>
     </div>
