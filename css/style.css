@@ -552,6 +552,13 @@ nav {
   animation: cardPopUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+/* AJUSTE ESPECÍFICO PARA O MODAL GAMIFICADO DE ALERTA */
+.alert-box {
+  border-color: #ff007f !important;
+  box-shadow: 0 0 50px #ff007f, inset 0 0 30px rgba(255, 0, 127, 0.6) !important;
+  max-width: 450px !important;
+}
+
 #loot-badge-container {
   position: relative;
   margin-bottom: 18px;
