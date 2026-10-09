@@ -6,14 +6,13 @@ const SUPABASE_ANON_KEY = "sb_publishable_FCdyKbtrv_-59kkIcd9xRg_gtFXE4ny";
 const AUDIO_BUY_URL = 'https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/compra.mp3';
 const AUDIO_LOOT_URL = 'https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/loot.mp3';
 
-// Instâncias Globais dos Áudios com Pré-carregamento ativado
+// Instâncias Globais dos Áudios
 const buySound = new Audio(AUDIO_BUY_URL);
 buySound.preload = 'auto';
 
 const lootSound = new Audio(AUDIO_LOOT_URL);
 lootSound.preload = 'auto';
 
-// Função auxiliar com tratamento de erros para reprodução do áudio
 function playAudio(sound) {
   sound.currentTime = 0;
   const playPromise = sound.play();
@@ -24,7 +23,6 @@ function playAudio(sound) {
   }
 }
 
-// Desbloqueia as permissões de som do navegador na primeira interação
 document.addEventListener('click', () => {
   buySound.load();
   lootSound.load();
@@ -39,13 +37,17 @@ let globalPoints = 0;
 let userInventory = {};
 let allStickers = [];
 let availablePacks = [];
+let countdownInterval = null;
 
-// ESTADO DO REVEAL SEQUENCIAL (CARD POR CARD)
+// ESTADO DO REVEAL SEQUENCIAL
 let revealQueue = [];
 let currentRevealIndex = 0;
 
 // ESTADO DO CARROSSEL DE PACOTES
 let currentPackIndex = 0;
+
+// VALORES DO PASSE DE 7 DIAS
+const PASS_REWARDS = [100, 150, 200, 250, 300, 400, 1000];
 
 // FUNÇÕES DO ALERT GAMIFICADO
 function showGameAlert(message, title = "OPERAÇÃO BLOQUEADA") {
@@ -87,7 +89,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// OCULTA / EXIBE TELA DE LOGIN
 function hideLoginScreen() {
   const loginOverlay = document.getElementById("login-screen");
   if (loginOverlay) loginOverlay.style.display = "none";
@@ -104,7 +105,6 @@ function showLoginScreen() {
   if (mainApp) mainApp.style.display = "none";
 }
 
-// LOGIN GOOGLE
 async function loginWithGoogle() {
   try {
     const { error } = await supabaseClient.auth.signInWithOAuth({
@@ -120,13 +120,11 @@ async function loginWithGoogle() {
   }
 }
 
-// LOGOUT
 async function handleLogout() {
   await supabaseClient.auth.signOut();
   window.location.reload();
 }
 
-// INICIALIZA USUÁRIO AUTENTICADO
 async function initAuthenticatedUser(authUser) {
   let { data: profile, error } = await supabaseClient
     .from("profiles")
@@ -167,7 +165,8 @@ async function initAuthenticatedUser(authUser) {
 
   await loadCatalogAndInventory();
   renderAlbum();
-  checkDailyClaimStatus();
+  startPassCountdown();
+  renderDailyPassUI();
 }
 
 function updateUserRoleUI(role) {
@@ -183,7 +182,6 @@ function updatePointsDisplay() {
   if (display) display.textContent = `SALDO: ${globalPoints} PONTOS`;
 }
 
-// CARREGA CATÁLOGO E INVENTÁRIO
 async function loadCatalogAndInventory() {
   const { data: stickers } = await supabaseClient.from("stickers").select("*").eq("is_active", true);
   allStickers = stickers || [];
@@ -200,8 +198,7 @@ async function loadCatalogAndInventory() {
 
     if (profile) {
       globalPoints = profile.global_points || 0;
-      currentUser.global_points = profile.global_points;
-      currentUser.last_daily_claim = profile.last_daily_claim || null;
+      currentUser = profile;
       updatePointsDisplay();
     }
 
@@ -221,42 +218,104 @@ async function loadCatalogAndInventory() {
   }
 }
 
-// LÓGICA DO BÔNUS DIÁRIO (VERIFICAÇÃO DEFENSIVA)
-async function checkDailyClaimStatus() {
-  const btn = document.getElementById("btn-daily-claim");
-  const timerEl = document.getElementById("daily-claim-timer");
-  if (!btn || !currentUser) return;
+// OBTÉM A DATA ATUAL EM SÃO PAULO (AAAA-MM-DD)
+function getTodayDateSP() {
+  const options = { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' };
+  const formatter = new Intl.DateTimeFormat('en-CA', options);
+  return formatter.format(new Date());
+}
 
-  if (!currentUser.last_daily_claim) {
-    btn.disabled = false;
-    btn.classList.add("active");
-    if (timerEl) timerEl.textContent = "Disponível agora!";
-    return;
+// GERENCIADOR DO PASSE DE BATALHA DE 7 DIAS
+function renderDailyPassUI() {
+  const grid = document.getElementById("pass-streak-grid");
+  const btn = document.getElementById("btn-claim-pass");
+  if (!grid || !currentUser) return;
+
+  grid.replaceChildren();
+
+  const todaySP = getTodayDateSP();
+  const lastClaim = currentUser.last_claim_date;
+  const currentStreak = currentUser.daily_streak || 0;
+
+  const isClaimedToday = lastClaim === todaySP;
+
+  // Determina qual o próximo dia da sequência
+  let nextDayToClaim = 1;
+  if (lastClaim) {
+    const lastDateObj = new Date(lastClaim);
+    const todayObj = new Date(todaySP);
+    const diffDays = Math.round((todayObj - lastDateObj) / (1000 * 60 * 60 * 24));
+
+    if (isClaimedToday) {
+      nextDayToClaim = currentStreak;
+    } else if (diffDays === 1 && currentStreak < 7) {
+      nextDayToClaim = currentStreak + 1;
+    } else {
+      nextDayToClaim = 1; // Perdeu o streak ou completou o ciclo
+    }
   }
 
-  const lastClaim = new Date(currentUser.last_daily_claim).getTime();
-  const nextClaim = lastClaim + (24 * 60 * 60 * 1000);
-  const now = new Date().getTime();
+  // Renderiza os 7 cards do passe
+  PASS_REWARDS.forEach((reward, index) => {
+    const dayNumber = index + 1;
+    const card = document.createElement("div");
 
-  if (isNaN(lastClaim) || now >= nextClaim) {
-    btn.disabled = false;
-    btn.classList.add("active");
-    if (timerEl) timerEl.textContent = "Disponível agora!";
-  } else {
-    btn.disabled = true;
-    btn.classList.remove("active");
-    const diff = nextClaim - now;
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    if (timerEl) timerEl.textContent = `Próximo resgate em: ${hours}h ${minutes}m`;
+    let cardStateClass = "locked";
+    let tagText = "LOCKED";
+    let tagClass = "locked";
+
+    if (dayNumber < nextDayToClaim || (dayNumber === nextDayToClaim && isClaimedToday)) {
+      cardStateClass = "claimed";
+      tagText = "RESGATADO ✔️";
+      tagClass = "claimed";
+    } else if (dayNumber === nextDayToClaim && !isClaimedToday) {
+      cardStateClass = "active-day";
+      tagText = "DISPONÍVEL 🎁";
+      tagClass = "active";
+    }
+
+    card.className = `pass-card ${cardStateClass}`;
+
+    const title = document.createElement("div");
+    title.className = "pass-day-title";
+    title.textContent = `DIA ${dayNumber}`;
+
+    const icon = document.createElement("div");
+    icon.className = "pass-reward-icon";
+    icon.textContent = dayNumber === 7 ? "🏆" : "🎁";
+
+    const points = document.createElement("div");
+    points.className = "pass-points-text";
+    points.textContent = `+${reward} PTS`;
+
+    const tag = document.createElement("div");
+    tag.className = `pass-status-tag ${tagClass}`;
+    tag.textContent = tagText;
+
+    card.appendChild(title);
+    card.appendChild(icon);
+    card.appendChild(points);
+    card.appendChild(tag);
+    grid.appendChild(card);
+  });
+
+  // Estado do botão principal
+  if (btn) {
+    if (isClaimedToday) {
+      btn.disabled = true;
+      btn.textContent = "✅ RECOMPENSA DE HOJE JÁ RESGATADA";
+    } else {
+      btn.disabled = false;
+      const amount = PASS_REWARDS[nextDayToClaim - 1];
+      btn.textContent = `🎁 RESGATAR DIA ${nextDayToClaim} (+${amount} PONTOS)`;
+    }
   }
 }
 
-async function handleClaimDailyBonus() {
+// EXECUTA O RESGATE DO PASSE VIA SUPABASE
+async function handleClaimDailyPass() {
   try {
-    const { data, error } = await supabaseClient.rpc("claim_daily_bonus", {
-      p_bonus_amount: 200
-    });
+    const { data, error } = await supabaseClient.rpc("claim_daily_pass");
 
     if (error) throw error;
 
@@ -264,22 +323,61 @@ async function handleClaimDailyBonus() {
       globalPoints = data.new_balance;
       if (currentUser) {
         currentUser.global_points = data.new_balance;
-        currentUser.last_daily_claim = new Date().toISOString();
+        currentUser.daily_streak = data.current_streak;
+        currentUser.last_claim_date = data.claim_date;
       }
 
       updatePointsDisplay();
-      checkDailyClaimStatus();
+      renderDailyPassUI();
 
       if (window.confetti) {
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
       }
 
-      showGameAlert("Você resgatou +200 PONTOS do seu bônus diário!", "BÔNUS RESGATADO!");
+      showGameAlert(
+        `Você resgatou o Dia ${data.current_streak} e recebeu +${data.earned_points} PONTOS!`,
+        "PASSE RESGATADO!"
+      );
     }
   } catch (err) {
-    console.error("Erro no resgate do bônus:", err);
-    showGameAlert(err.message || "Não foi possível resgatar o bônus no momento.", "BÔNUS INDISPONÍVEL");
+    console.error("Erro no resgate do passe:", err);
+    showGameAlert(err.message || "Não foi possível resgatar o passe no momento.", "PASSE INDISPONÍVEL");
   }
+}
+
+// TEMPORIZADOR REGRESSIVO EM TEMPO REAL PARA A MEIA-NOITE DE SP
+function startPassCountdown() {
+  if (countdownInterval) clearInterval(countdownInterval);
+
+  function updateTimer() {
+    const timerEl = document.getElementById("pass-countdown-timer");
+    if (!timerEl) return;
+
+    // Obtém o horário atual em São Paulo
+    const nowSPStr = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+    const nowSP = new Date(nowSPStr);
+
+    // Próxima meia-noite em São Paulo
+    const nextResetSP = new Date(nowSP);
+    nextResetSP.setHours(24, 0, 0, 0);
+
+    const diff = nextResetSP - nowSP;
+
+    if (diff <= 0) {
+      timerEl.textContent = "00:00:00 (RESETANDO...)";
+      loadCatalogAndInventory().then(() => renderDailyPassUI());
+      return;
+    }
+
+    const hours = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, '0');
+    const minutes = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+    const seconds = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
+
+    timerEl.textContent = `${hours}:${minutes}:${seconds}`;
+  }
+
+  updateTimer();
+  countdownInterval = setInterval(updateTimer, 1000);
 }
 
 // NAVEGAÇÃO ENTRE ABAS
@@ -292,10 +390,8 @@ function switchTab(tabName, event) {
   if (event) event.currentTarget.classList.add("active");
 
   if (tabName === "album") renderAlbum();
-  if (tabName === "shop") {
-    renderShop();
-    checkDailyClaimStatus();
-  }
+  if (tabName === "shop") renderShop();
+  if (tabName === "pass") renderDailyPassUI();
   if (tabName === "inventory") renderInventory();
 }
 
@@ -453,17 +549,15 @@ function renderInventory() {
   }
 }
 
-// TABELA DE PREÇOS DE RECICLAGEM POR RARIDADE
 function getStickerRecycleValue(rarity) {
   switch (rarity) {
     case "legendary": return 250;
     case "epic": return 120;
     case "rare": return 75;
-    default: return 30; // common
+    default: return 30;
   }
 }
 
-// ATUALIZA VALOR DINÂMICO DE RECOMPENSA
 function updateRecycleValueDisplay(stickerId, unitValue) {
   const input = document.getElementById(`recycle-qty-${stickerId}`);
   const display = document.getElementById(`recycle-total-${stickerId}`);
@@ -478,7 +572,6 @@ function updateRecycleValueDisplay(stickerId, unitValue) {
   display.textContent = `+${qty * unitValue} PONTOS`;
 }
 
-// EXECUTA VENDEDOR DE REPETIDAS VIA SUPABASE RPC
 async function handleRecycleSticker(stickerId, unitValue) {
   const input = document.getElementById(`recycle-qty-${stickerId}`);
   if (!input) return;
@@ -613,7 +706,6 @@ function renderShop() {
   updateCarouselPosition();
 }
 
-// CARROSSEL - NAVEGAÇÃO
 function navigateCarousel(direction) {
   if (availablePacks.length === 0) return;
   currentPackIndex = (currentPackIndex + direction + availablePacks.length) % availablePacks.length;
@@ -674,7 +766,6 @@ function setupSwipeEvents(element) {
   });
 }
 
-// CERIMÔNIA DE UNBOXING
 async function startUnboxingCeremony(pack) {
   if (globalPoints < pack.cost_points) {
     return showGameAlert("Pontos insuficientes para adquirir este pacote!", "SALDO INSUFICIENTE");
@@ -725,7 +816,6 @@ async function startUnboxingCeremony(pack) {
   }
 }
 
-// REVELAÇÃO SEQUENCIAL DAS FIGURINHAS
 function startSequentialReveal(drawnItems) {
   revealQueue = drawnItems;
   currentRevealIndex = 0;
@@ -795,7 +885,6 @@ function closeReveal() {
   }
 }
 
-// INSPEÇÃO DE FIGURINHAS
 function openInspect(sticker) {
   const overlay = document.getElementById("inspect-overlay");
   const container = document.getElementById("inspect-card-container");
@@ -831,7 +920,6 @@ function closeInspect() {
   document.getElementById("inspect-overlay")?.classList.remove("active");
 }
 
-// CADASTRO SUPERADMIN
 async function createStickerBySuperadmin() {
   if (!currentUser || currentUser.role !== "superadmin") {
     return showGameAlert("Acesso negado: apenas o Superadmin pode cadastrar figurinhas.", "ACESSO NEGADO");
