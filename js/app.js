@@ -47,6 +47,21 @@ let currentRevealIndex = 0;
 // ESTADO DO CARROSSEL DE PACOTES
 let currentPackIndex = 0;
 
+// FUNÇÕES DO ALERT GAMIFICADO
+function showGameAlert(message, title = "OPERAÇÃO BLOQUEADA") {
+  const overlay = document.getElementById("game-alert-overlay");
+  const titleEl = document.getElementById("game-alert-title");
+  const msgEl = document.getElementById("game-alert-message");
+
+  if (titleEl) titleEl.textContent = title;
+  if (msgEl) msgEl.textContent = message;
+  if (overlay) overlay.classList.add("active");
+}
+
+function closeGameAlert() {
+  document.getElementById("game-alert-overlay")?.classList.remove("active");
+}
+
 // INICIALIZAÇÃO E ESCUTA DE AUTENTICAÇÃO
 document.addEventListener("DOMContentLoaded", async () => {
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
@@ -92,7 +107,7 @@ async function loginWithGoogle() {
       redirectTo: window.location.origin + window.location.pathname
     }
   });
-  if (error) alert("Erro ao autenticar com o Google: " + error.message);
+  if (error) showGameAlert("Erro ao autenticar com o Google: " + error.message, "ERRO DE AUTH");
 }
 
 // LOGOUT
@@ -123,10 +138,10 @@ async function initAuthenticatedUser(authUser) {
       .select()
       .single();
 
-    if (createError) return alert("Erro ao criar perfil: " + createError.message);
+    if (createError) return showGameAlert("Erro ao criar perfil: " + createError.message, "ERRO DE PERFIL");
     profile = newProfile;
   } else if (error) {
-    return alert("Erro ao consultar perfil: " + error.message);
+    return showGameAlert("Erro ao consultar perfil: " + error.message, "ERRO DE PERFIL");
   }
 
   currentUser = profile;
@@ -464,43 +479,48 @@ function setupSwipeEvents(element) {
   });
 }
 
-// UNBOXING SEGURO VIA RPC SUPABASE
+// CERIMÔNIA DE UNBOXING COM CHECK-IN PRÉVIO E ALERT GAMIFICADO
 async function startUnboxingCeremony(pack) {
+  // 1. Verificação local de saldo
   if (globalPoints < pack.cost_points) {
-    return alert("Pontos insuficientes para comprar este pacote!");
+    return showGameAlert("Pontos insuficientes para adquirir este pacote!", "SALDO INSUFICIENTE");
   }
 
-  const ceremonyOverlay = document.getElementById("loot-ceremony-overlay");
-  const ceremonyPackTitle = document.getElementById("ceremony-pack-title");
-  const unboxingPack = document.querySelector(".unboxing-pack");
-
-  if (ceremonyPackTitle) ceremonyPackTitle.textContent = pack.pack_name.toUpperCase();
-
-  unboxingPack.className = "unboxing-pack suspense-shake";
-  ceremonyOverlay.classList.add("active");
-
-  playAudio(buySound);
-
-  setTimeout(() => {
-    unboxingPack.className = "unboxing-pack tear-open";
-  }, 2000);
-
-  setTimeout(() => {
-    const flashEl = document.getElementById("flash");
-    if (flashEl) {
-      flashEl.classList.add("active");
-      setTimeout(() => flashEl.classList.remove("active"), 350);
-    }
-  }, 2500);
-
+  // 2. Validação e execução de transação no Supabase ANTES da animação
   try {
-    // Executa o sorteio e debito de pontos com seguranca no PostgreSQL
     const { data: drawnItems, error } = await supabaseClient.rpc("open_pack", {
       pack_id_param: pack.id
     });
 
-    if (error) throw error;
+    if (error) {
+      return showGameAlert(error.message, "FALHA NA COMPRA");
+    }
 
+    // 3. Sucesso na validação: executa animação
+    const ceremonyOverlay = document.getElementById("loot-ceremony-overlay");
+    const ceremonyPackTitle = document.getElementById("ceremony-pack-title");
+    const unboxingPack = document.querySelector(".unboxing-pack");
+
+    if (ceremonyPackTitle) ceremonyPackTitle.textContent = pack.pack_name.toUpperCase();
+
+    unboxingPack.className = "unboxing-pack suspense-shake";
+    ceremonyOverlay.classList.add("active");
+
+    playAudio(buySound);
+
+    setTimeout(() => {
+      unboxingPack.className = "unboxing-pack tear-open";
+    }, 2000);
+
+    setTimeout(() => {
+      const flashEl = document.getElementById("flash");
+      if (flashEl) {
+        flashEl.classList.add("active");
+        setTimeout(() => flashEl.classList.remove("active"), 350);
+      }
+    }, 2500);
+
+    // 4. Atualiza catálogo e inicia revelação sequencial
     await loadCatalogAndInventory();
 
     setTimeout(() => {
@@ -510,8 +530,7 @@ async function startUnboxingCeremony(pack) {
     }, 2800);
 
   } catch (err) {
-    ceremonyOverlay.classList.remove("active");
-    alert("Erro na abertura do pacote: " + err.message);
+    showGameAlert("Erro ao conectar com o servidor: " + err.message, "ERRO DE CONEXÃO");
   }
 }
 
@@ -624,7 +643,7 @@ function closeInspect() {
 // CADASTRO SUPERADMIN
 async function createStickerBySuperadmin() {
   if (!currentUser || currentUser.role !== "superadmin") {
-    return alert("Acesso negado: apenas o Superadmin pode cadastrar figurinhas.");
+    return showGameAlert("Acesso negado: apenas o Superadmin pode cadastrar figurinhas.", "ACESSO NEGADO");
   }
 
   const id = document.getElementById("sticker-id").value.trim();
@@ -632,7 +651,7 @@ async function createStickerBySuperadmin() {
   const imageUrl = document.getElementById("sticker-url").value.trim();
   const rarity = document.getElementById("sticker-rarity").value;
 
-  if (!id || !title || !imageUrl) return alert("Preencha todos os campos da figurinha!");
+  if (!id || !title || !imageUrl) return showGameAlert("Preencha todos os campos da figurinha!", "CAMPOS INCOMPLETOS");
 
   const { error } = await supabaseClient.from("stickers").insert([{
     id: id,
@@ -642,9 +661,9 @@ async function createStickerBySuperadmin() {
     channel_id: "00000000-0000-0000-0000-000000000000"
   }]);
 
-  if (error) return alert("Erro ao cadastrar figurinha: " + error.message);
+  if (error) return showGameAlert("Erro ao cadastrar figurinha: " + error.message, "ERRO AO CADASTRAR");
 
-  alert("Figurinha cadastrada com sucesso!");
+  showGameAlert("Figurinha cadastrada com sucesso!", "SUCESSO");
   await loadCatalogAndInventory();
   renderAlbum();
 }
