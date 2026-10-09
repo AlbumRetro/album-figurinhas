@@ -175,9 +175,19 @@
           (Clique em qualquer lugar para fechar)
         </p>
       </div>
+
+      <!-- MODAL DE ERRO / AVISO GAMIFICADO -->
+      <div id="game-alert-overlay" class="reveal-overlay">
+        <div class="lootbox-modal alert-box">
+          <div class="badge badge-duplicate">⚠️ ATENÇÃO</div>
+          <h3 id="game-alert-title" class="section-subtitle">OPERAÇÃO BLOQUEADA</h3>
+          <p id="game-alert-message" class="inspect-hint" style="color: #fff; margin: 15px 0;"></p>
+          <button class="nav-btn active btn-submit" onclick="closeGameAlert()">ENTENDIDO</button>
+        </div>
+      </div>
     </div>
 
     <!-- Script JS -->
-    <script src="js/app.js?v=4.5"></script>
+    <script src="js/app.js?v=5.0"></script>
   </body>
 </html>
