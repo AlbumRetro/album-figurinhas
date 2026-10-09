@@ -39,7 +39,6 @@ let globalPoints = 0;
 let userInventory = {};
 let allStickers = [];
 let availablePacks = [];
-let raritiesMap = {};
 
 // ESTADO DO REVEAL SEQUENCIAL (CARD POR CARD)
 let revealQueue = [];
@@ -104,14 +103,12 @@ async function handleLogout() {
 
 // INICIALIZA USUÁRIO AUTENTICADO
 async function initAuthenticatedUser(authUser) {
-  // Consulta diretamente o registro da tabela profiles
   let { data: profile, error } = await supabaseClient
     .from("profiles")
     .select("*")
     .eq("id", authUser.id)
     .maybeSingle();
 
-  // Se não existir o registro no banco, cria usando os metadados do Google
   if (!profile) {
     const googleName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email;
     const { data: newProfile, error: createError } = await supabaseClient
@@ -135,10 +132,9 @@ async function initAuthenticatedUser(authUser) {
   currentUser = profile;
   globalPoints = profile.global_points;
 
-  // Exibe estritamente o display_name cadastrado no banco de dados
   const userDisplay = document.getElementById("user-email-display");
   if (userDisplay) {
-    userDisplay.innerText = profile.display_name;
+    userDisplay.textContent = profile.display_name;
   }
 
   updateUserRoleUI(profile.role);
@@ -158,19 +154,11 @@ function updateUserRoleUI(role) {
 
 function updatePointsDisplay() {
   const display = document.getElementById("points-display");
-  if (display) display.innerText = `SALDO: ${globalPoints} PONTOS`;
+  if (display) display.textContent = `SALDO: ${globalPoints} PONTOS`;
 }
 
-// CARREGA CATÁLOGO, RARIDADES E INVENTÁRIO
+// CARREGA CATÁLOGO E INVENTÁRIO
 async function loadCatalogAndInventory() {
-  const { data: rarities } = await supabaseClient.from("rarities").select("*");
-  raritiesMap = {};
-  if (rarities) {
-    rarities.forEach(r => {
-      raritiesMap[r.id] = r.default_drop_weight;
-    });
-  }
-
   const { data: stickers } = await supabaseClient.from("stickers").select("*").eq("is_active", true);
   allStickers = stickers || [];
 
@@ -178,6 +166,18 @@ async function loadCatalogAndInventory() {
   availablePacks = packs || [];
 
   if (currentUser) {
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("global_points")
+      .eq("id", currentUser.id)
+      .single();
+
+    if (profile) {
+      globalPoints = profile.global_points;
+      currentUser.global_points = profile.global_points;
+      updatePointsDisplay();
+    }
+
     const { data: inventory } = await supabaseClient
       .from("user_stickers")
       .select("*")
@@ -208,16 +208,16 @@ function switchTab(tabName, event) {
   if (tabName === "inventory") renderInventory();
 }
 
-// RENDERIZAR MEU ÁLBUM
+// RENDERIZAR MEU ÁLBUM (SEM INNERHTML INSEGURO)
 function renderAlbum() {
   const grid = document.getElementById("album-grid");
   const status = document.getElementById("album-status");
   if (!grid) return;
 
-  grid.innerHTML = "";
+  grid.replaceChildren();
 
   if (allStickers.length === 0) {
-    if (status) status.innerText = "Nenhuma figurinha cadastrada no catálogo global.";
+    if (status) status.textContent = "Nenhuma figurinha cadastrada no catálogo global.";
     return;
   }
 
@@ -229,28 +229,33 @@ function renderAlbum() {
     if (isUnlocked) coladas++;
 
     const card = document.createElement("div");
-    card.className = `card rarity-${sticker.rarity} ${isUnlocked ? '' : 'locked'}`;
+    card.className = `card rarity-${encodeURIComponent(sticker.rarity)} ${isUnlocked ? '' : 'locked'}`;
 
     if (isUnlocked) {
       card.onclick = () => openInspect(sticker);
-      const duplicateBadge = count > 1 ? `<div class="badge">+${count - 1}</div>` : '';
 
-      card.innerHTML = `
-        ${duplicateBadge}
-        <img src="${sticker.image_url}" alt="${sticker.title}">
-        <div class="card-title">#${sticker.id}</div>
-      `;
-    } else {
-      card.innerHTML = `
-        <img src="${sticker.image_url}" alt="Bloqueado">
-        <div class="card-title">#${sticker.id}</div>
-      `;
+      if (count > 1) {
+        const badge = document.createElement("div");
+        badge.className = "badge";
+        badge.textContent = `+${count - 1}`;
+        card.appendChild(badge);
+      }
     }
 
+    const img = document.createElement("img");
+    img.src = sticker.image_url;
+    img.alt = isUnlocked ? sticker.title : "Bloqueado";
+
+    const titleDiv = document.createElement("div");
+    titleDiv.className = "card-title";
+    titleDiv.textContent = `#${sticker.id}`;
+
+    card.appendChild(img);
+    card.appendChild(titleDiv);
     grid.appendChild(card);
   });
 
-  if (status) status.innerText = `Figurinhas coladas: ${coladas} / ${allStickers.length}`;
+  if (status) status.textContent = `Figurinhas coladas: ${coladas} / ${allStickers.length}`;
 }
 
 // RENDERIZAR INVENTÁRIO (REPETIDAS)
@@ -259,7 +264,7 @@ function renderInventory() {
   const status = document.getElementById("inventory-status");
   if (!grid) return;
 
-  grid.innerHTML = "";
+  grid.replaceChildren();
   let totalPossuidas = 0;
 
   allStickers.forEach(sticker => {
@@ -268,35 +273,50 @@ function renderInventory() {
       totalPossuidas += count;
 
       const card = document.createElement("div");
-      card.className = `card rarity-${sticker.rarity}`;
+      card.className = `card rarity-${encodeURIComponent(sticker.rarity)}`;
       card.onclick = () => openInspect(sticker);
 
-      card.innerHTML = `
-        ${count > 1 ? `<div class="badge">+${count - 1} Repetida(s)</div>` : ''}
-        <img src="${sticker.image_url}" alt="${sticker.title}">
-        <div class="card-title">#${sticker.id} (x${count})</div>
-      `;
+      if (count > 1) {
+        const badge = document.createElement("div");
+        badge.className = "badge";
+        badge.textContent = `+${count - 1} Repetida(s)`;
+        card.appendChild(badge);
+      }
+
+      const img = document.createElement("img");
+      img.src = sticker.image_url;
+      img.alt = sticker.title;
+
+      const titleDiv = document.createElement("div");
+      titleDiv.className = "card-title";
+      titleDiv.textContent = `#${sticker.id} (x${count})`;
+
+      card.appendChild(img);
+      card.appendChild(titleDiv);
       grid.appendChild(card);
     }
   });
 
   if (status) {
-    status.innerText = totalPossuidas === 0 
+    status.textContent = totalPossuidas === 0 
       ? "Sua coleção está vazia. Abra pacotes na loja!" 
       : `Total de figurinhas no seu inventário: ${totalPossuidas}`;
   }
 }
 
-// RENDERIZAR LOJA COM CARROSSEL HORIZONTAL E CICLO INFINITO
+// RENDERIZAR LOJA
 function renderShop() {
   updatePointsDisplay();
   const container = document.getElementById("packs-container");
   if (!container) return;
 
-  container.innerHTML = "";
+  container.replaceChildren();
 
   if (availablePacks.length === 0) {
-    container.innerHTML = "<p class='status-text'>Nenhum pacote disponível na loja no momento.</p>";
+    const emptyMsg = document.createElement("p");
+    emptyMsg.className = "status-text";
+    emptyMsg.textContent = "Nenhum pacote disponível na loja no momento.";
+    container.appendChild(emptyMsg);
     return;
   }
 
@@ -305,12 +325,12 @@ function renderShop() {
 
   const prevBtn = document.createElement("button");
   prevBtn.className = "carousel-btn prev";
-  prevBtn.innerHTML = "&#10094;";
+  prevBtn.textContent = "❮";
   prevBtn.onclick = () => navigateCarousel(-1);
 
   const nextBtn = document.createElement("button");
   nextBtn.className = "carousel-btn next";
-  nextBtn.innerHTML = "&#10095;";
+  nextBtn.textContent = "❯";
   nextBtn.onclick = () => navigateCarousel(1);
 
   const trackContainer = document.createElement("div");
@@ -326,16 +346,40 @@ function renderShop() {
     packEl.className = "booster-pack carousel-item";
     packEl.onclick = () => startUnboxingCeremony(pack);
 
-    packEl.innerHTML = `
-      <div class="pack-top-crimp"></div>
-      <div class="pack-foil-body">
-        <div class="pack-foil-title">${pack.pack_name}</div>
-        <div class="pack-foil-emblem">🎁</div>
-        <div class="pack-foil-sub">${pack.cost_points} PONTOS</div>
-        <div class="pack-foil-badge">${qty} FIGURINHA(S)</div>
-      </div>
-      <div class="pack-bottom-crimp"></div>
-    `;
+    const topCrimp = document.createElement("div");
+    topCrimp.className = "pack-top-crimp";
+
+    const body = document.createElement("div");
+    body.className = "pack-foil-body";
+
+    const title = document.createElement("div");
+    title.className = "pack-foil-title";
+    title.textContent = pack.pack_name;
+
+    const emblem = document.createElement("div");
+    emblem.className = "pack-foil-emblem";
+    emblem.textContent = "🎁";
+
+    const sub = document.createElement("div");
+    sub.className = "pack-foil-sub";
+    sub.textContent = `${pack.cost_points} PONTOS`;
+
+    const badge = document.createElement("div");
+    badge.className = "pack-foil-badge";
+    badge.textContent = `${qty} FIGURINHA(S)`;
+
+    body.appendChild(title);
+    body.appendChild(emblem);
+    body.appendChild(sub);
+    body.appendChild(badge);
+
+    const bottomCrimp = document.createElement("div");
+    bottomCrimp.className = "pack-bottom-crimp";
+
+    packEl.appendChild(topCrimp);
+    packEl.appendChild(body);
+    packEl.appendChild(bottomCrimp);
+
     track.appendChild(packEl);
   });
 
@@ -359,7 +403,7 @@ function renderShop() {
   updateCarouselPosition();
 }
 
-// NAVEGAÇÃO CÍCLICA DO CARROSSEL
+// CARROSSEL - NAVEGAÇÃO
 function navigateCarousel(direction) {
   if (availablePacks.length === 0) return;
   currentPackIndex = (currentPackIndex + direction + availablePacks.length) % availablePacks.length;
@@ -387,7 +431,6 @@ function updateCarouselPosition() {
   });
 }
 
-// SUPORTE A SWIPE E DRAG NO CARROSSEL
 function setupSwipeEvents(element) {
   let startX = 0;
   let isDragging = false;
@@ -421,76 +464,22 @@ function setupSwipeEvents(element) {
   });
 }
 
-// WEIGHTED RANDOM COM PESOS DA TABELA RARITIES
-function getRandomStickerWeighted(stickersPool) {
-  const totalWeight = stickersPool.reduce((sum, sticker) => {
-    const weight = raritiesMap[sticker.rarity] !== undefined ? raritiesMap[sticker.rarity] : 100;
-    return sum + weight;
-  }, 0);
-
-  let randomNum = Math.random() * totalWeight;
-
-  for (const sticker of stickersPool) {
-    const weight = raritiesMap[sticker.rarity] !== undefined ? raritiesMap[sticker.rarity] : 100;
-    if (randomNum < weight) {
-      return sticker;
-    }
-    randomNum -= weight;
-  }
-  return stickersPool[0];
-}
-
-// CERIMÔNIA DE UNBOXING
+// UNBOXING SEGURO VIA RPC SUPABASE
 async function startUnboxingCeremony(pack) {
   if (globalPoints < pack.cost_points) {
     return alert("Pontos insuficientes para comprar este pacote!");
-  }
-
-  const { data: packStickersRelations } = await supabaseClient
-    .from("pack_stickers")
-    .select("sticker_id")
-    .eq("pack_id", pack.id);
-
-  let eligibleStickers = [];
-
-  if (packStickersRelations && packStickersRelations.length > 0) {
-    eligibleStickers = packStickersRelations.map(rel => {
-      return allStickers.find(s => String(s.id) === String(rel.sticker_id));
-    }).filter(Boolean);
-  } else {
-    eligibleStickers = allStickers;
-  }
-
-  if (eligibleStickers.length === 0) {
-    return alert("Não há figurinhas disponíveis para este pacote no momento.");
   }
 
   const ceremonyOverlay = document.getElementById("loot-ceremony-overlay");
   const ceremonyPackTitle = document.getElementById("ceremony-pack-title");
   const unboxingPack = document.querySelector(".unboxing-pack");
 
-  if (ceremonyPackTitle) ceremonyPackTitle.innerText = pack.pack_name.toUpperCase();
+  if (ceremonyPackTitle) ceremonyPackTitle.textContent = pack.pack_name.toUpperCase();
 
   unboxingPack.className = "unboxing-pack suspense-shake";
   ceremonyOverlay.classList.add("active");
 
   playAudio(buySound);
-
-  const updatedPoints = globalPoints - pack.cost_points;
-
-  const { error: updatePointsErr } = await supabaseClient
-    .from("profiles")
-    .update({ global_points: updatedPoints })
-    .eq("id", currentUser.id);
-
-  if (updatePointsErr) {
-    ceremonyOverlay.classList.remove("active");
-    return alert("Erro ao debitar pontos no banco de dados: " + updatePointsErr.message);
-  }
-
-  globalPoints = updatedPoints;
-  currentUser.global_points = updatedPoints;
-  updatePointsDisplay();
 
   setTimeout(() => {
     unboxingPack.className = "unboxing-pack tear-open";
@@ -504,37 +493,29 @@ async function startUnboxingCeremony(pack) {
     }
   }, 2500);
 
-  setTimeout(async () => {
-    const countToDraw = pack.stickers_count || 1;
-    const drawnItems = [];
+  try {
+    // Executa o sorteio e debito de pontos com seguranca no PostgreSQL
+    const { data: drawnItems, error } = await supabaseClient.rpc("open_pack", {
+      pack_id_param: pack.id
+    });
 
-    for (let i = 0; i < countToDraw; i++) {
-      const drawnSticker = getRandomStickerWeighted(eligibleStickers);
-      const currentQty = userInventory[drawnSticker.id] || 0;
-      const isNew = currentQty === 0;
+    if (error) throw error;
 
-      userInventory[drawnSticker.id] = currentQty + 1;
+    await loadCatalogAndInventory();
 
-      await supabaseClient
-        .from("user_stickers")
-        .upsert({
-          user_id: currentUser.id,
-          sticker_id: drawnSticker.id,
-          quantity: userInventory[drawnSticker.id],
-          updated_at: new Date().toISOString()
-        }, { onConflict: "user_id, sticker_id" });
+    setTimeout(() => {
+      playAudio(lootSound);
+      ceremonyOverlay.classList.remove("active");
+      startSequentialReveal(drawnItems);
+    }, 2800);
 
-      drawnItems.push({ sticker: drawnSticker, isNew });
-    }
-
-    playAudio(lootSound);
+  } catch (err) {
     ceremonyOverlay.classList.remove("active");
-
-    startSequentialReveal(drawnItems);
-  }, 2800);
+    alert("Erro na abertura do pacote: " + err.message);
+  }
 }
 
-// INICIA A REVELAÇÃO SEQUENCIAL (FIGURINHA POR FIGURINHA)
+// REVELAÇÃO SEQUENCIAL DAS FIGURINHAS
 function startSequentialReveal(drawnItems) {
   revealQueue = drawnItems;
   currentRevealIndex = 0;
@@ -553,23 +534,34 @@ function showCurrentQueueCard() {
   const totalItems = revealQueue.length;
   const isLast = currentRevealIndex === totalItems - 1;
 
-  badgeContainer.innerHTML = currentItem.isNew 
-    ? `<div class="badge badge-new">★ FIGURINHA NOVA! ★</div>`
-    : `<div class="badge badge-duplicate">REPETIDA (+1)</div>`;
+  badgeContainer.replaceChildren();
+  const badge = document.createElement("div");
+  badge.className = `badge ${currentItem.is_new ? 'badge-new' : 'badge-duplicate'}`;
+  badge.textContent = currentItem.is_new ? "★ FIGURINHA NOVA! ★" : "REPETIDA (+1)";
+  badgeContainer.appendChild(badge);
 
-  container.innerHTML = `
-    <div class="large-card rarity-${currentItem.sticker.rarity}">
-      <img src="${currentItem.sticker.image_url}" alt="${currentItem.sticker.title}">
-      <div class="card-title">#${currentItem.sticker.id} - ${currentItem.sticker.title}</div>
-    </div>
-  `;
+  container.replaceChildren();
+  const largeCard = document.createElement("div");
+  largeCard.className = `large-card rarity-${encodeURIComponent(currentItem.rarity)}`;
+
+  const img = document.createElement("img");
+  img.src = currentItem.image_url;
+  img.alt = currentItem.title;
+
+  const titleDiv = document.createElement("div");
+  titleDiv.className = "card-title";
+  titleDiv.textContent = `#${currentItem.id} - ${currentItem.title}`;
+
+  largeCard.appendChild(img);
+  largeCard.appendChild(titleDiv);
+  container.appendChild(largeCard);
 
   if (totalItems > 1) {
-    btnCollect.innerText = isLast 
+    btnCollect.textContent = isLast 
       ? `COLAR E FINALIZAR (${currentRevealIndex + 1}/${totalItems})` 
       : `PRÓXIMA FIGURINHA (${currentRevealIndex + 1}/${totalItems}) ➔`;
   } else {
-    btnCollect.innerText = currentItem.isNew ? "COLAR NO ÁLBUM" : "GUARDAR NO INVENTÁRIO";
+    btnCollect.textContent = currentItem.is_new ? "COLAR NO ÁLBUM" : "GUARDAR NO INVENTÁRIO";
   }
 
   overlay.classList.add("active");
@@ -579,7 +571,6 @@ function showCurrentQueueCard() {
   }
 }
 
-// NAVEGA PARA A PRÓXIMA FIGURINHA OU ENCERRA O MODAL
 function closeReveal() {
   currentRevealIndex++;
 
@@ -594,19 +585,34 @@ function closeReveal() {
   }
 }
 
+// INSPEÇÃO DE FIGURINHAS
 function openInspect(sticker) {
   const overlay = document.getElementById("inspect-overlay");
   const container = document.getElementById("inspect-card-container");
 
-  if (!overlay) return;
+  if (!overlay || !container) return;
 
-  container.innerHTML = `
-    <div class="inspect-box rarity-${sticker.rarity}">
-      <img src="${sticker.image_url}" alt="${sticker.title}">
-      <div class="card-title">#${sticker.id} - ${sticker.title}</div>
-      <p class="inspect-rarity-text">Raridade: ${sticker.rarity.toUpperCase()}</p>
-    </div>
-  `;
+  container.replaceChildren();
+
+  const box = document.createElement("div");
+  box.className = `inspect-box rarity-${encodeURIComponent(sticker.rarity)}`;
+
+  const img = document.createElement("img");
+  img.src = sticker.image_url;
+  img.alt = sticker.title;
+
+  const titleDiv = document.createElement("div");
+  titleDiv.className = "card-title";
+  titleDiv.textContent = `#${sticker.id} - ${sticker.title}`;
+
+  const rarityP = document.createElement("p");
+  rarityP.className = "inspect-rarity-text";
+  rarityP.textContent = `Raridade: ${sticker.rarity.toUpperCase()}`;
+
+  box.appendChild(img);
+  box.appendChild(titleDiv);
+  box.appendChild(rarityP);
+  container.appendChild(box);
 
   overlay.classList.add("active");
 }
@@ -615,7 +621,7 @@ function closeInspect() {
   document.getElementById("inspect-overlay")?.classList.remove("active");
 }
 
-// SUPERADMIN - CADASTRO DE FIGURINHAS
+// CADASTRO SUPERADMIN
 async function createStickerBySuperadmin() {
   if (!currentUser || currentUser.role !== "superadmin") {
     return alert("Acesso negado: apenas o Superadmin pode cadastrar figurinhas.");
