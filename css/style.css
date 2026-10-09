@@ -552,11 +552,76 @@ nav {
   animation: cardPopUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* AJUSTE ESPECÍFICO PARA O MODAL GAMIFICADO DE ALERTA */
+/* MODAL DE ERRO DE SALDO GAMIFICADO (SEM ROLAGEM E BORDAS NEON VERMELHAS) */
 .alert-box {
-  border-color: #ff007f !important;
-  box-shadow: 0 0 50px #ff007f, inset 0 0 30px rgba(255, 0, 127, 0.6) !important;
-  max-width: 450px !important;
+  border: 4px solid #ff0055 !important;
+  box-shadow: 0 0 40px #ff0055, inset 0 0 25px rgba(255, 0, 85, 0.5) !important;
+  max-width: 420px !important;
+  overflow: hidden !important;
+  padding: 25px 20px !important;
+  position: relative;
+}
+
+.alert-header-badge {
+  position: relative !important;
+  top: 0 !important;
+  right: 0 !important;
+  margin: 0 auto 10px auto !important;
+  display: inline-block !important;
+  background: #ffaa00 !important;
+  color: #000 !important;
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.75rem !important;
+  padding: 6px 14px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 15px #ffaa00 !important;
+  border: 2px solid #000 !important;
+}
+
+.alert-defeat-icon {
+  font-size: 3rem;
+  margin: 10px 0;
+  filter: drop-shadow(0 0 15px #ff0055);
+  animation: defeatPulse 1.2s infinite alternate;
+}
+
+.alert-title-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.95rem;
+  color: #ff0055;
+  text-shadow: 0 0 10px #ff0055;
+  margin: 10px 0;
+}
+
+.alert-message-text {
+  color: #ddd;
+  font-size: 0.85rem;
+  margin: 10px 0 20px 0;
+  line-height: 1.4;
+}
+
+.alert-btn-ok {
+  background: #ff0055;
+  color: #fff;
+  border: 2px solid #ffffff;
+  padding: 12px 24px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #80002a, 0 0 20px rgba(255, 0, 85, 0.8);
+  transition: all 0.15s ease;
+}
+
+.alert-btn-ok:hover {
+  background: #ff2a75;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #80002a, 0 0 30px #ff0055;
+}
+
+@keyframes defeatPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 10px #ff0055); }
+  100% { transform: scale(1.15); filter: drop-shadow(0 0 25px #ff0055); }
 }
 
 #loot-badge-container {
