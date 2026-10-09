@@ -142,7 +142,7 @@ nav {
   .grid { grid-template-columns: minmax(240px, 1fr); gap: 20px; }
 }
 
-/* CARDS DO ÁLBUM */
+/* CARDS DO ÁLBUM E INVENTÁRIO */
 .card {
   border: 3px solid #ff007f;
   border-radius: 16px;
@@ -213,6 +213,69 @@ nav {
   border: 2px solid #000;
   box-shadow: 0 0 10px #ffff00;
   z-index: 2;
+}
+
+/* SELETOR DE RECICLAGEM DE REPETIDAS (INVENTÁRIO) */
+.recycle-control-box {
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px dashed #ff007f;
+  border-radius: 8px;
+  padding: 10px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.recycle-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  color: #00ffff;
+}
+
+.recycle-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.recycle-input {
+  width: 60px;
+  background: #120826;
+  border: 2px solid #00ffff;
+  color: #ffff00;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 6px;
+  border-radius: 4px;
+}
+
+.recycle-input:focus {
+  outline: none;
+  box-shadow: 0 0 10px #00ffff;
+}
+
+.recycle-unit-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.65rem;
+  color: #aaa;
+}
+
+.recycle-total-price {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.75rem;
+  color: #ffff00;
+  text-shadow: 0 0 8px #ffff00;
+}
+
+.btn-recycle {
+  width: 100%;
+  padding: 8px;
+  font-size: 0.65rem !important;
+  margin-top: 4px;
 }
 
 /* PACOTES DE LOOT BOX NOSTÁLGICOS */
