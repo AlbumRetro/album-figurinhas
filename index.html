@@ -18,7 +18,7 @@
     <link rel="preload" href="https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/loot.mp3" as="audio" />
 
     <!-- Folha de Estilos Unificada com Cache Busting -->
-    <link rel="stylesheet" href="css/style.css?v=5.0" />
+    <link rel="stylesheet" href="css/style.css?v=6.0" />
   </head>
   <body>
     <!-- Flash Overlay de Alta Intensidade -->
@@ -65,6 +65,9 @@
         <button class="nav-btn" onclick="switchTab('shop', event)">
           Abrir Pacote 🎁
         </button>
+        <button class="nav-btn" onclick="switchTab('pass', event)">
+          Passe Diário ⚡
+        </button>
         <button class="nav-btn" onclick="switchTab('inventory', event)">
           Inventário / Repetidas 📦
         </button>
@@ -91,14 +94,6 @@
             SALDO: 1000 PONTOS
           </div>
 
-          <!-- BOTÃO DE BÔNUS DIÁRIO -->
-          <div class="daily-bonus-container">
-            <button id="btn-daily-claim" class="nav-btn active btn-daily" onclick="handleClaimDailyBonus()">
-              🎁 RESGATAR BÔNUS DIÁRIO (+200 PONTOS)
-            </button>
-            <p id="daily-claim-timer" class="daily-timer-text"></p>
-          </div>
-
           <h2 class="section-subtitle">
             BOOSTER PACKS HOLOGRAM
           </h2>
@@ -112,7 +107,28 @@
         </div>
       </div>
 
-      <!-- ABA 3: INVENTÁRIO -->
+      <!-- ABA 3: PASSE DIÁRIO DE 7 DIAS -->
+      <div id="tab-pass" class="tab-content">
+        <div class="pass-container">
+          <h2 class="section-title">⚡ PASSE DE RECOMPENSAS DIÁRIAS</h2>
+          <p class="status-text">Faça login todos os dias para acumular pontos e desbloquear o super bônus no 7º dia!</p>
+          
+          <div class="timer-box">
+            <span class="timer-label">PRÓXIMO RESET EM (HORÁRIO DE SP):</span>
+            <span id="pass-countdown-timer" class="timer-clock">00:00:00</span>
+          </div>
+
+          <div id="pass-streak-grid" class="pass-grid">
+            <!-- Trilha dos 7 Dias Renderizada via JavaScript -->
+          </div>
+
+          <button id="btn-claim-pass" class="nav-btn active btn-pass-claim" onclick="handleClaimDailyPass()">
+            🎁 RESGATAR RECOMPENSA DE HOJE
+          </button>
+        </div>
+      </div>
+
+      <!-- ABA 4: INVENTÁRIO -->
       <div id="tab-inventory" class="tab-content">
         <h2 class="section-title">
           Minha Coleção Completa
@@ -121,7 +137,7 @@
         <div id="inventory-grid" class="grid"></div>
       </div>
 
-      <!-- ABA 4: PAINEL SUPERADMIN -->
+      <!-- ABA 5: PAINEL SUPERADMIN -->
       <div id="tab-superadmin" class="tab-content">
         <h2 class="section-title">
           Cadastrar Nova Figurinha
@@ -198,6 +214,6 @@
     </div>
 
     <!-- Script JS -->
-    <script src="js/app.js?v=5.0"></script>
+    <script src="js/app.js?v=6.0"></script>
   </body>
 </html>
