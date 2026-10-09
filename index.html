@@ -18,7 +18,7 @@
     <link rel="preload" href="https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/loot.mp3" as="audio" />
 
     <!-- Folha de Estilos Unificada com Cache Busting -->
-    <link rel="stylesheet" href="css/style.css?v=4.0" />
+    <link rel="stylesheet" href="css/style.css?v=5.0" />
   </head>
   <body>
     <!-- Flash Overlay de Alta Intensidade -->
@@ -90,6 +90,15 @@
           <div id="points-display" class="points-display">
             SALDO: 1000 PONTOS
           </div>
+
+          <!-- BOTÃO DE BÔNUS DIÁRIO -->
+          <div class="daily-bonus-container">
+            <button id="btn-daily-claim" class="nav-btn active btn-daily" onclick="handleClaimDailyBonus()">
+              🎁 RESGATAR BÔNUS DIÁRIO (+200 PONTOS)
+            </button>
+            <p id="daily-claim-timer" class="daily-timer-text"></p>
+          </div>
+
           <h2 class="section-subtitle">
             BOOSTER PACKS HOLOGRAM
           </h2>
