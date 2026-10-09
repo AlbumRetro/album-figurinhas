@@ -223,7 +223,7 @@ function switchTab(tabName, event) {
   if (tabName === "inventory") renderInventory();
 }
 
-// RENDERIZAR MEU ÁLBUM (SEM INNERHTML INSEGURO)
+// RENDERIZAR MEU ÁLBUM
 function renderAlbum() {
   const grid = document.getElementById("album-grid");
   const status = document.getElementById("album-status");
@@ -273,49 +273,168 @@ function renderAlbum() {
   if (status) status.textContent = `Figurinhas coladas: ${coladas} / ${allStickers.length}`;
 }
 
-// RENDERIZAR INVENTÁRIO (REPETIDAS)
+// RENDERIZAR INVENTÁRIO COM SELETOR DE RECICLAGEM
 function renderInventory() {
   const grid = document.getElementById("inventory-grid");
   const status = document.getElementById("inventory-status");
   if (!grid) return;
 
   grid.replaceChildren();
+  let totalDuplicatedCount = 0;
   let totalPossuidas = 0;
 
   allStickers.forEach(sticker => {
     const count = userInventory[sticker.id] || 0;
     if (count > 0) {
       totalPossuidas += count;
+      const duplicates = count - 1;
 
       const card = document.createElement("div");
       card.className = `card rarity-${encodeURIComponent(sticker.rarity)}`;
-      card.onclick = () => openInspect(sticker);
-
-      if (count > 1) {
-        const badge = document.createElement("div");
-        badge.className = "badge";
-        badge.textContent = `+${count - 1} Repetida(s)`;
-        card.appendChild(badge);
-      }
 
       const img = document.createElement("img");
       img.src = sticker.image_url;
       img.alt = sticker.title;
+      img.onclick = () => openInspect(sticker);
 
       const titleDiv = document.createElement("div");
       titleDiv.className = "card-title";
-      titleDiv.textContent = `#${sticker.id} (x${count})`;
+      titleDiv.textContent = `#${sticker.id} - ${sticker.title}`;
 
       card.appendChild(img);
       card.appendChild(titleDiv);
+
+      if (duplicates > 0) {
+        totalDuplicatedCount += duplicates;
+
+        const badge = document.createElement("div");
+        badge.className = "badge badge-duplicate";
+        badge.textContent = `x${count} (${duplicates} REPETIDA${duplicates > 1 ? 'S' : ''})`;
+        card.appendChild(badge);
+
+        const unitValue = getStickerRecycleValue(sticker.rarity);
+
+        const recycleBox = document.createElement("div");
+        recycleBox.className = "recycle-control-box";
+
+        const label = document.createElement("label");
+        label.className = "recycle-label";
+        label.textContent = "VENDER REPETIDAS:";
+
+        const inputGroup = document.createElement("div");
+        inputGroup.className = "recycle-input-group";
+
+        const input = document.createElement("input");
+        input.type = "number";
+        input.id = `recycle-qty-${sticker.id}`;
+        input.className = "recycle-input";
+        input.min = "1";
+        input.max = duplicates;
+        input.value = "1";
+        input.onchange = () => updateRecycleValueDisplay(sticker.id, unitValue);
+        input.onkeyup = () => updateRecycleValueDisplay(sticker.id, unitValue);
+
+        const unitText = document.createElement("span");
+        unitText.className = "recycle-unit-text";
+        unitText.textContent = `/ ${duplicates}`;
+
+        inputGroup.appendChild(input);
+        inputGroup.appendChild(unitText);
+
+        const totalPrice = document.createElement("div");
+        totalPrice.id = `recycle-total-${sticker.id}`;
+        totalPrice.className = "recycle-total-price";
+        totalPrice.textContent = `+${unitValue} PONTOS`;
+
+        const btnRecycle = document.createElement("button");
+        btnRecycle.className = "nav-btn active btn-recycle";
+        btnRecycle.textContent = "♻️ RECOLHER PONTOS";
+        btnRecycle.onclick = (e) => {
+          e.stopPropagation();
+          handleRecycleSticker(sticker.id, unitValue);
+        };
+
+        recycleBox.appendChild(label);
+        recycleBox.appendChild(inputGroup);
+        recycleBox.appendChild(totalPrice);
+        recycleBox.appendChild(btnRecycle);
+
+        card.appendChild(recycleBox);
+      }
+
       grid.appendChild(card);
     }
   });
 
   if (status) {
-    status.textContent = totalPossuidas === 0 
-      ? "Sua coleção está vazia. Abra pacotes na loja!" 
-      : `Total de figurinhas no seu inventário: ${totalPossuidas}`;
+    if (totalPossuidas === 0) {
+      status.textContent = "Sua coleção está vazia. Abra pacotes na loja!";
+    } else if (totalDuplicatedCount === 0) {
+      status.textContent = `Coleção com ${totalPossuidas} figurinha(s). Nenhuma repetida para vender no momento!`;
+    } else {
+      status.textContent = `Você possui ${totalDuplicatedCount} figurinha(s) repetida(s) disponível(is) para reciclagem.`;
+    }
+  }
+}
+
+// TABELA DE PREÇOS DE RECICLAGEM POR RARIDADE
+function getStickerRecycleValue(rarity) {
+  switch (rarity) {
+    case "legendary": return 250;
+    case "epic": return 120;
+    case "rare": return 75;
+    default: return 30; // common
+  }
+}
+
+// ATUALIZA VALOR DINÂMICO DE RECOMPENSA
+function updateRecycleValueDisplay(stickerId, unitValue) {
+  const input = document.getElementById(`recycle-qty-${stickerId}`);
+  const display = document.getElementById(`recycle-total-${stickerId}`);
+  if (!input || !display) return;
+
+  let qty = parseInt(input.value, 10) || 1;
+  const max = parseInt(input.max, 10);
+  if (qty < 1) qty = 1;
+  if (qty > max) qty = max;
+  input.value = qty;
+
+  display.textContent = `+${qty * unitValue} PONTOS`;
+}
+
+// EXECUTA VENDEDOR DE REPETIDAS VIA SUPABASE RPC
+async function handleRecycleSticker(stickerId, unitValue) {
+  const input = document.getElementById(`recycle-qty-${stickerId}`);
+  if (!input) return;
+
+  const quantity = parseInt(input.value, 10);
+  if (!quantity || quantity <= 0) return;
+
+  try {
+    const { data, error } = await supabaseClient.rpc("recycle_duplicates", {
+      p_sticker_id: stickerId,
+      p_quantity: quantity,
+      p_unit_price: unitValue
+    });
+
+    if (error) throw error;
+
+    if (data && data.success) {
+      globalPoints = data.new_balance;
+      if (currentUser) currentUser.global_points = data.new_balance;
+      updatePointsDisplay();
+
+      showGameAlert(
+        `Você reciclou ${quantity} repetida(s) e recebeu +${data.earned_points} PONTOS!`,
+        "RECICLAGEM CONCLUÍDA"
+      );
+
+      await loadCatalogAndInventory();
+      renderInventory();
+    }
+  } catch (err) {
+    console.error("Erro na reciclagem:", err);
+    showGameAlert(err.message || "Falha ao processar a venda de repetidas.", "ERRO NA OPERAÇÃO");
   }
 }
 
@@ -479,14 +598,12 @@ function setupSwipeEvents(element) {
   });
 }
 
-// CERIMÔNIA DE UNBOXING COM CHECK-IN PRÉVIO E ALERT GAMIFICADO
+// CERIMÔNIA DE UNBOXING
 async function startUnboxingCeremony(pack) {
-  // 1. Verificação local de saldo
   if (globalPoints < pack.cost_points) {
     return showGameAlert("Pontos insuficientes para adquirir este pacote!", "SALDO INSUFICIENTE");
   }
 
-  // 2. Validação e execução de transação no Supabase ANTES da animação
   try {
     const { data: drawnItems, error } = await supabaseClient.rpc("open_pack", {
       pack_id_param: pack.id
@@ -496,7 +613,6 @@ async function startUnboxingCeremony(pack) {
       return showGameAlert(error.message, "FALHA NA COMPRA");
     }
 
-    // 3. Sucesso na validação: executa animação
     const ceremonyOverlay = document.getElementById("loot-ceremony-overlay");
     const ceremonyPackTitle = document.getElementById("ceremony-pack-title");
     const unboxingPack = document.querySelector(".unboxing-pack");
@@ -520,7 +636,6 @@ async function startUnboxingCeremony(pack) {
       }
     }, 2500);
 
-    // 4. Atualiza catálogo e inicia revelação sequencial
     await loadCatalogAndInventory();
 
     setTimeout(() => {
