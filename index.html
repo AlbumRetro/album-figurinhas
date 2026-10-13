@@ -47,7 +47,9 @@
 
     <!-- CONTEÚDO PRINCIPAL (INICIA OCULTO VIA JS) -->
     <div id="main-app" style="display: none;">
-      <div class="user-bar">
+      
+      <!-- BARRA SUPERIOR EXCLUSIVA PARA ADMIN / SUPERADMIN -->
+      <div id="admin-header-bar" class="user-bar" style="display: none;">
         <span id="user-email-display" class="user-email-text"></span>
         <div>
           <button class="reset-btn logout-btn" onclick="handleLogout()">
@@ -58,6 +60,7 @@
 
       <h1 class="glitch-title">Álbum de Figurinhas Retrô</h1>
 
+      <!-- NAVEGAÇÃO PRINCIPAL -->
       <nav>
         <button class="nav-btn active" onclick="switchTab('album', event)">
           Meu Álbum
@@ -65,8 +68,8 @@
         <button class="nav-btn" onclick="switchTab('shop', event)">
           Abrir Pacote 🎁
         </button>
-        <button class="nav-btn" onclick="switchTab('pass', event)">
-          Passe Diário ⚡
+        <button class="nav-btn" onclick="switchTab('perfil', event)">
+          Perfil 👤
         </button>
         <button class="nav-btn" onclick="switchTab('inventory', event)">
           Inventário / Repetidas 📦
@@ -107,24 +110,79 @@
         </div>
       </div>
 
-      <!-- ABA 3: PASSE DIÁRIO DE 7 DIAS -->
-      <div id="tab-pass" class="tab-content">
-        <div class="pass-container">
-          <h2 class="section-title">⚡ PASSE DE RECOMPENSAS DIÁRIAS</h2>
-          <p class="status-text">Faça login todos os dias para acumular pontos e desbloquear o super bônus no 7º dia!</p>
+      <!-- ABA 3: PERFIL DO USUÁRIO & PASSE DIÁRIO -->
+      <div id="tab-perfil" class="tab-content">
+        <div class="profile-page-container">
           
-          <div class="timer-box">
-            <span class="timer-label">PRÓXIMO RESET EM (HORÁRIO DE SP):</span>
-            <span id="pass-countdown-timer" class="timer-clock">00:00:00</span>
+          <!-- CARD DE DADOS DO USUÁRIO -->
+          <div class="profile-header-card">
+            <div class="profile-avatar-wrapper">
+              <img id="profile-avatar-img" src="https://via.placeholder.com/100?text=USER" alt="Foto de Perfil" class="profile-avatar-img" />
+            </div>
+            
+            <div class="profile-info-box">
+              <h2 class="profile-name-heading">
+                <span id="profile-display-name">Carregando...</span>
+                <span id="profile-tag" class="profile-tag-badge">#0000</span>
+              </h2>
+              <p id="profile-handle" class="profile-handle-text" style="display: none;"></p>
+              <p id="profile-email" class="profile-email-text">🔒 login@exemplo.com</p>
+              
+              <div class="profile-balance-chip">
+                <span>⚡ SALDO GLOBAL:</span>
+                <strong id="profile-points-balance">0 PTS</strong>
+              </div>
+            </div>
+
+            <div class="profile-actions-box">
+              <button class="reset-btn logout-btn" onclick="handleLogout()">
+                Sair da Conta 🚪
+              </button>
+            </div>
           </div>
 
-          <div id="pass-streak-grid" class="pass-grid">
-            <!-- Trilha dos 7 Dias Renderizada via JavaScript -->
+          <!-- SEÇÃO DE INSÍGNIAS / CONQUISTAS (PLACEHOLDERS) -->
+          <div class="badges-section-container">
+            <h3 class="section-subtitle">🏅 INSÍGNIAS & CONQUISTAS</h3>
+            <div class="badges-grid-wrapper">
+              <div class="badge-slot active" title="Participante Beta">
+                <div class="badge-icon-frame">🌟</div>
+                <span class="badge-title-text">BETA</span>
+              </div>
+              <div class="badge-slot locked" title="Mestre do Passe Diário">
+                <div class="badge-icon-frame">🔒</div>
+                <span class="badge-title-text">FIDELIDADE</span>
+              </div>
+              <div class="badge-slot locked" title="Coleção Completa">
+                <div class="badge-icon-frame">🔒</div>
+                <span class="badge-title-text">MESTRE</span>
+              </div>
+              <div class="badge-slot locked" title="Trader P2P">
+                <div class="badge-icon-frame">🔒</div>
+                <span class="badge-title-text">COMERCIANTE</span>
+              </div>
+            </div>
           </div>
 
-          <button id="btn-claim-pass" class="nav-btn active btn-pass-claim" onclick="handleClaimDailyPass()">
-            🎁 RESGATAR RECOMPENSA DE HOJE
-          </button>
+          <!-- CONTAINER DO PASSE DIÁRIO DENTRO DO PERFIL -->
+          <div class="pass-container embedded-pass">
+            <h2 class="section-title">⚡ PASSE DE RECOMPENSAS DIÁRIAS</h2>
+            <p class="status-text">Faça login todos os dias para acumular pontos e desbloquear o super bônus no 7º dia!</p>
+            
+            <div class="timer-box">
+              <span class="timer-label">PRÓXIMO RESET EM (HORÁRIO DE SP):</span>
+              <span id="pass-countdown-timer" class="timer-clock">00:00:00</span>
+            </div>
+
+            <div id="pass-streak-grid" class="pass-grid">
+              <!-- Trilha dos 7 Dias Renderizada via JavaScript -->
+            </div>
+
+            <button id="btn-claim-pass" class="nav-btn active btn-pass-claim" onclick="handleClaimDailyPass()">
+              🎁 RESGATAR RECOMPENSA DE HOJE
+            </button>
+          </div>
+
         </div>
       </div>
 
