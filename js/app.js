@@ -187,6 +187,7 @@ async function initAuthenticatedUser(authUser) {
   renderAlbum();
   startPassCountdown();
   renderDailyPassUI();
+  await loadFriendsAndRequests();
 }
 
 function updateUserRoleUI(role) {
@@ -219,7 +220,7 @@ function updateProfileUI(profile) {
   const emailEl = document.getElementById("profile-email");
   if (emailEl) emailEl.textContent = profile.email ? `🔒 ${profile.email}` : "🔒 E-mail não informado";
 
-  // TRATAMENTO DE HANDLE PÚBLICO (Esconde se for nulo, contiver '@' ou for o próprio e-mail)
+  // TRATAMENTO DE HANDLE PÚBLICO
   const handleEl = document.getElementById("profile-handle");
   if (handleEl) {
     const isInvalidHandle = !profile.youtube_handle || 
@@ -454,8 +455,294 @@ function switchTab(tabName, event) {
   if (tabName === "perfil") {
     renderDailyPassUI();
     if (currentUser) updateProfileUI(currentUser);
+    loadFriendsAndRequests();
   }
   if (tabName === "inventory") renderInventory();
+}
+
+// ==============================================================================
+// FASE 3: LÓGICA DO MÓDULO DE AMIGOS & BUSCA P2P
+// ==============================================================================
+
+async function handleSearchFriend() {
+  const inputEl = document.getElementById("friend-search-input");
+  const resultsContainer = document.getElementById("friends-search-results");
+  if (!inputEl || !resultsContainer) return;
+
+  const query = inputEl.value.trim();
+  if (!query) return;
+
+  resultsContainer.replaceChildren();
+
+  const loadingP = document.createElement("p");
+  loadingP.className = "status-text";
+  loadingP.textContent = "Buscando usuários...";
+  resultsContainer.appendChild(loadingP);
+
+  try {
+    const { data: users, error } = await supabaseClient.rpc("search_user_for_friendship", {
+      p_search_query: query
+    });
+
+    if (error) throw error;
+
+    resultsContainer.replaceChildren();
+
+    if (!users || users.length === 0) {
+      const emptyP = document.createElement("p");
+      emptyP.className = "status-text";
+      emptyP.textContent = "Nenhum usuário encontrado com esse Nome#TAG ou @handle.";
+      resultsContainer.appendChild(emptyP);
+      return;
+    }
+
+    users.forEach(u => {
+      const card = document.createElement("div");
+      card.className = "friend-user-card";
+
+      const infoBox = document.createElement("div");
+      infoBox.className = "friend-user-info";
+
+      const avatar = document.createElement("img");
+      avatar.className = "friend-avatar-img";
+      avatar.src = u.avatar_url || "https://via.placeholder.com/100?text=USER";
+
+      const details = document.createElement("div");
+      details.className = "friend-details";
+
+      const nameRow = document.createElement("div");
+      nameRow.className = "friend-name-row";
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "friend-display-name";
+      nameSpan.textContent = u.display_name || "Usuário";
+
+      const tagSpan = document.createElement("span");
+      tagSpan.className = "friend-tag-badge";
+      tagSpan.textContent = u.tag ? `#${u.tag}` : "#0000";
+
+      nameRow.appendChild(nameSpan);
+      nameRow.appendChild(tagSpan);
+      details.appendChild(nameRow);
+      infoBox.appendChild(avatar);
+      infoBox.appendChild(details);
+
+      const actionBox = document.createElement("div");
+      actionBox.className = "friend-action-btns";
+
+      const btnAdd = document.createElement("button");
+      btnAdd.className = "btn-friend-action btn-friend-accept";
+      btnAdd.textContent = "➕ ADICIONAR";
+      btnAdd.onclick = () => sendFriendRequest(u.id);
+
+      actionBox.appendChild(btnAdd);
+      card.appendChild(infoBox);
+      card.appendChild(actionBox);
+      resultsContainer.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error("Erro ao buscar usuários:", err);
+    resultsContainer.replaceChildren();
+    showGameAlert(err.message || "Erro ao realizar busca.", "ERRO DE BUSCA");
+  }
+}
+
+async function sendFriendRequest(targetUserId) {
+  try {
+    const { data, error } = await supabaseClient.rpc("send_friend_request", {
+      p_target_user_id: targetUserId
+    });
+
+    if (error) throw error;
+
+    if (data) {
+      showGameAlert(data.message, data.success ? "SOLICITAÇÃO ENVIADA" : "AVISO");
+      if (data.success) {
+        document.getElementById("friends-search-results")?.replaceChildren();
+        const inputEl = document.getElementById("friend-search-input");
+        if (inputEl) inputEl.value = "";
+        await loadFriendsAndRequests();
+      }
+    }
+  } catch (err) {
+    console.error("Erro ao enviar solicitação:", err);
+    showGameAlert(err.message || "Falha ao enviar convite.", "ERRO DE CONEXÃO");
+  }
+}
+
+async function loadFriendsAndRequests() {
+  if (!currentUser) return;
+
+  const requestsSection = document.getElementById("friends-requests-section");
+  const requestsList = document.getElementById("friends-requests-list");
+  const activeList = document.getElementById("friends-active-list");
+
+  if (!activeList) return;
+
+  try {
+    // 1. CARREGA SOLICITAÇÕES RECEBIDAS PENDENTES
+    const { data: pendingData, error: pendingErr } = await supabaseClient
+      .from("friendships")
+      .select("id, user_id, profiles!friendships_user_id_fkey(id, display_name, tag, avatar_url)")
+      .eq("friend_id", currentUser.id)
+      .eq("status", "pending");
+
+    if (!pendingErr && pendingData && pendingData.length > 0) {
+      if (requestsSection) requestsSection.style.display = "block";
+      if (requestsList) {
+        requestsList.replaceChildren();
+        pendingData.forEach(item => {
+          const sender = item.profiles;
+          if (!sender) return;
+
+          const card = document.createElement("div");
+          card.className = "friend-user-card";
+
+          const infoBox = document.createElement("div");
+          infoBox.className = "friend-user-info";
+
+          const avatar = document.createElement("img");
+          avatar.className = "friend-avatar-img";
+          avatar.src = sender.avatar_url || "https://via.placeholder.com/100?text=USER";
+
+          const details = document.createElement("div");
+          details.className = "friend-details";
+
+          const nameRow = document.createElement("div");
+          nameRow.className = "friend-name-row";
+
+          const nameSpan = document.createElement("span");
+          nameSpan.className = "friend-display-name";
+          nameSpan.textContent = sender.display_name;
+
+          const tagSpan = document.createElement("span");
+          tagSpan.className = "friend-tag-badge";
+          tagSpan.textContent = `#${sender.tag}`;
+
+          nameRow.appendChild(nameSpan);
+          nameRow.appendChild(tagSpan);
+          details.appendChild(nameRow);
+          infoBox.appendChild(avatar);
+          infoBox.appendChild(details);
+
+          const actionBox = document.createElement("div");
+          actionBox.className = "friend-action-btns";
+
+          const btnAccept = document.createElement("button");
+          btnAccept.className = "btn-friend-action btn-friend-accept";
+          btnAccept.textContent = "✔ ACEITAR";
+          btnAccept.onclick = () => respondFriendRequest(item.id, 'accepted');
+
+          const btnReject = document.createElement("button");
+          btnReject.className = "btn-friend-action btn-friend-reject";
+          btnReject.textContent = "✖ RECUSAR";
+          btnReject.onclick = () => respondFriendRequest(item.id, 'rejected');
+
+          actionBox.appendChild(btnAccept);
+          actionBox.appendChild(btnReject);
+          card.appendChild(infoBox);
+          card.appendChild(actionBox);
+          requestsList.appendChild(card);
+        });
+      }
+    } else {
+      if (requestsSection) requestsSection.style.display = "none";
+    }
+
+    // 2. CARREGA LISTA DE AMIGOS ACEITOS
+    const { data: friendsData, error: friendsErr } = await supabaseClient
+      .from("friendships")
+      .select("id, user_id, friend_id, status")
+      .or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`)
+      .eq("status", "accepted");
+
+    activeList.replaceChildren();
+
+    if (friendsErr || !friendsData || friendsData.length === 0) {
+      const emptyP = document.createElement("p");
+      emptyP.className = "status-text";
+      emptyP.textContent = "Você ainda não possui amigos adicionados.";
+      activeList.appendChild(emptyP);
+      return;
+    }
+
+    // Extrai os IDs dos amigos
+    const friendUserIds = friendsData.map(f => f.user_id === currentUser.id ? f.friend_id : f.user_id);
+
+    // Consulta os perfis dos amigos
+    const { data: friendProfiles } = await supabaseClient
+      .from("profiles")
+      .select("id, display_name, tag, avatar_url")
+      .in("id", friendUserIds);
+
+    if (!friendProfiles || friendProfiles.length === 0) {
+      const emptyP = document.createElement("p");
+      emptyP.className = "status-text";
+      emptyP.textContent = "Nenhum amigo ativo encontrado.";
+      activeList.appendChild(emptyP);
+      return;
+    }
+
+    friendProfiles.forEach(f => {
+      const card = document.createElement("div");
+      card.className = "friend-user-card";
+
+      const infoBox = document.createElement("div");
+      infoBox.className = "friend-user-info";
+
+      const avatar = document.createElement("img");
+      avatar.className = "friend-avatar-img";
+      avatar.src = f.avatar_url || "https://via.placeholder.com/100?text=USER";
+
+      const details = document.createElement("div");
+      details.className = "friend-details";
+
+      const nameRow = document.createElement("div");
+      nameRow.className = "friend-name-row";
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "friend-display-name";
+      nameSpan.textContent = f.display_name;
+
+      const tagSpan = document.createElement("span");
+      tagSpan.className = "friend-tag-badge";
+      tagSpan.textContent = `#${f.tag}`;
+
+      nameRow.appendChild(nameSpan);
+      nameRow.appendChild(tagSpan);
+      details.appendChild(nameRow);
+      infoBox.appendChild(avatar);
+      infoBox.appendChild(details);
+
+      card.appendChild(infoBox);
+      activeList.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error("Erro ao carregar amizades:", err);
+  }
+}
+
+async function respondFriendRequest(friendshipId, newStatus) {
+  try {
+    const { error } = await supabaseClient
+      .from("friendships")
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq("id", friendshipId);
+
+    if (error) throw error;
+
+    showGameAlert(
+      newStatus === "accepted" ? "Solicitação de amizade aceita!" : "Solicitação recusada.",
+      "AMIZADE"
+    );
+
+    await loadFriendsAndRequests();
+  } catch (err) {
+    console.error("Erro ao responder solicitação:", err);
+    showGameAlert(err.message || "Erro ao atualizar status.", "ERRO");
+  }
 }
 
 // RENDERIZAR MEU ÁLBUM
