@@ -39,6 +39,10 @@ let allStickers = [];
 let availablePacks = [];
 let countdownInterval = null;
 
+// ESTADO DE TROCAS E INSPEÇÃO DO AMIGO
+let selectedFriendForTrade = null;
+let selectedTargetStickerForTrade = null;
+
 // ESTADO DO REVEAL SEQUENCIAL
 let revealQueue = [];
 let currentRevealIndex = 0;
@@ -49,7 +53,7 @@ let currentPackIndex = 0;
 // VALORES DO PASSE DE 7 DIAS
 const PASS_REWARDS = [100, 150, 200, 250, 300, 400, 1000];
 
-// FUNÇÕES DO ALERT GAMIFICADO (COM ICONOGRAFIA REVISADA)
+// FUNÇÕES DO ALERT GAMIFICADO
 function showGameAlert(message, title = "Aviso do Sistema", icon = "ℹ️") {
   const overlay = document.getElementById("game-alert-overlay");
   const titleEl = document.getElementById("game-alert-title");
@@ -90,13 +94,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     showLoginScreen();
   }
 
-  // ATALHO PARA BUSCA DE AMIGOS COM A TECLA ENTER (UX MELHORADA)
+  // ATALHO PARA BUSCA DE AMIGOS COM A TECLA ENTER
   const friendSearchInput = document.getElementById("friend-search-input");
   if (friendSearchInput) {
     friendSearchInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
         handleSearchFriend();
+      }
+    });
+  }
+
+  // BUSCA EM TEMPO REAL NAS REPETIDAS DO AMIGO (NOME OU #ID)
+  const dupSearchInput = document.getElementById("friend-dup-search-input");
+  if (dupSearchInput) {
+    dupSearchInput.addEventListener("input", () => {
+      if (selectedFriendForTrade) {
+        loadFriendDuplicatesList(selectedFriendForTrade.id, dupSearchInput.value.trim());
       }
     });
   }
@@ -149,7 +163,6 @@ async function initAuthenticatedUser(authUser) {
   const googleEmail = authUser.email || null;
   const googleName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email;
   
-  // Garante que o handle seja válido e não um e-mail
   const preferredHandle = authUser.user_metadata?.preferred_username || null;
   const validHandle = (preferredHandle && !preferredHandle.includes("@")) ? preferredHandle : null;
 
@@ -173,7 +186,6 @@ async function initAuthenticatedUser(authUser) {
   } else if (error) {
     return showGameAlert("Erro ao consultar perfil: " + error.message, "Erro de Perfil", "⚠️");
   } else {
-    // Sincroniza foto e email se estiverem desatualizados
     if (profile.avatar_url !== googleAvatar || profile.email !== googleEmail) {
       const { data: updatedProfile } = await supabaseClient
         .from("profiles")
@@ -233,7 +245,6 @@ function updateProfileUI(profile) {
   const emailEl = document.getElementById("profile-email");
   if (emailEl) emailEl.textContent = profile.email ? `🔒 ${profile.email}` : "🔒 E-mail não informado";
 
-  // TRATAMENTO DE HANDLE PÚBLICO
   const handleEl = document.getElementById("profile-handle");
   if (handleEl) {
     const isInvalidHandle = !profile.youtube_handle || 
@@ -299,14 +310,12 @@ async function loadCatalogAndInventory() {
   }
 }
 
-// OBTÉM A DATA ATUAL EM SÃO PAULO (AAAA-MM-DD)
 function getTodayDateSP() {
   const options = { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' };
   const formatter = new Intl.DateTimeFormat('en-CA', options);
   return formatter.format(new Date());
 }
 
-// GERENCIADOR DO PASSE DE BATALHA DE 7 DIAS
 function renderDailyPassUI() {
   const grid = document.getElementById("pass-streak-grid");
   const btn = document.getElementById("btn-claim-pass");
@@ -455,7 +464,6 @@ function startPassCountdown() {
   countdownInterval = setInterval(updateTimer, 1000);
 }
 
-// NAVEGAÇÃO ENTRE ABAS
 function switchTab(tabName, event) {
   document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("active"));
@@ -475,7 +483,7 @@ function switchTab(tabName, event) {
 }
 
 // ==============================================================================
-// FASE 3: LÓGICA DO MÓDULO DE AMIGOS & BUSCA P2P (UX DE BOTÃO DINÂMICO)
+// FASE 3: MÓDULO DE AMIGOS & CONSULTA DE REPETIDAS (COM BUSCA POR NOME OU #ID)
 // ==============================================================================
 
 async function handleSearchFriend() {
@@ -494,7 +502,6 @@ async function handleSearchFriend() {
   resultsContainer.appendChild(loadingP);
 
   try {
-    // Busca os usuários encontrados pelo termo
     const { data: users, error } = await supabaseClient.rpc("search_user_for_friendship", {
       p_search_query: query
     });
@@ -511,14 +518,12 @@ async function handleSearchFriend() {
       return;
     }
 
-    // Consulta o estado atual de amizade/pedidos entre o usuário atual e os encontrados
     const userIds = users.map(u => u.id);
     const { data: existingRelationships } = await supabaseClient
       .from("friendships")
       .select("user_id, friend_id, status")
       .or(`and(user_id.eq.${currentUser.id},friend_id.in.(${userIds.join(",")})),and(friend_id.eq.${currentUser.id},user_id.in.(${userIds.join(",")}))`);
 
-    // Mapeia os status das amizades para renderizar o botão correto
     const friendshipMap = {};
     if (existingRelationships) {
       existingRelationships.forEach(rel => {
@@ -608,7 +613,6 @@ async function sendFriendRequestInline(targetUserId) {
 
     if (data) {
       if (data.success || data.message?.includes("já existe")) {
-        // MUDA O BOTÃO EM TEMPO REAL SEM APAGAR A BUSCA NEM MOSTRAR POPUP
         if (btn) {
           btn.className = "btn-friend-action btn-friend-pending";
           btn.textContent = "⏳ PENDENTE";
@@ -643,7 +647,6 @@ async function loadFriendsAndRequests() {
   if (!activeList) return;
 
   try {
-    // 1. CARREGA SOLICITAÇÕES RECEBIDAS PENDENTES
     const { data: pendingData, error: pendingErr } = await supabaseClient
       .from("friendships")
       .select("id, user_id, profiles!friendships_user_id_fkey(id, display_name, tag, avatar_url)")
@@ -712,7 +715,6 @@ async function loadFriendsAndRequests() {
       if (requestsSection) requestsSection.style.display = "none";
     }
 
-    // 2. CARREGA LISTA DE AMIGOS ACEITOS
     const { data: friendsData, error: friendsErr } = await supabaseClient
       .from("friendships")
       .select("id, user_id, friend_id, status")
@@ -729,10 +731,8 @@ async function loadFriendsAndRequests() {
       return;
     }
 
-    // Extrai os IDs dos amigos
     const friendUserIds = friendsData.map(f => f.user_id === currentUser.id ? f.friend_id : f.user_id);
 
-    // Consulta os perfis dos amigos
     const { data: friendProfiles } = await supabaseClient
       .from("profiles")
       .select("id, display_name, tag, avatar_url")
@@ -777,7 +777,18 @@ async function loadFriendsAndRequests() {
       infoBox.appendChild(avatar);
       infoBox.appendChild(details);
 
+      const actionBox = document.createElement("div");
+      actionBox.className = "friend-action-btns";
+
+      // BOTÃO NOVO PARA EXAMINAR AS REPETIDAS DO AMIGO
+      const btnViewDuplicates = document.createElement("button");
+      btnViewDuplicates.className = "btn-friend-action btn-friend-accept";
+      btnViewDuplicates.textContent = "📦 VER REPETIDAS";
+      btnViewDuplicates.onclick = () => openFriendDuplicatesModal(f);
+
+      actionBox.appendChild(btnViewDuplicates);
       card.appendChild(infoBox);
+      card.appendChild(actionBox);
       activeList.appendChild(card);
     });
 
@@ -799,6 +810,182 @@ async function respondFriendRequest(friendshipId, newStatus) {
   } catch (err) {
     console.error("Erro ao responder solicitação:", err);
     showGameAlert(err.message || "Erro ao atualizar status.", "Erro", "⚠️");
+  }
+}
+
+// ==============================================================================
+// MÓDULO DE INSPEÇÃO DE REPETIDAS & PROPOSTA DE TROCA ASSÍNCRONA
+// ==============================================================================
+
+async function openFriendDuplicatesModal(friend) {
+  selectedFriendForTrade = friend;
+  const overlay = document.getElementById("friend-duplicates-overlay");
+  const nameEl = document.getElementById("friend-dup-name");
+  const searchInput = document.getElementById("friend-dup-search-input");
+
+  if (nameEl) nameEl.textContent = friend.display_name.toUpperCase();
+  if (searchInput) searchInput.value = "";
+
+  if (overlay) overlay.classList.add("active");
+  await loadFriendDuplicatesList(friend.id, "");
+}
+
+function closeFriendDuplicatesModal() {
+  document.getElementById("friend-duplicates-overlay")?.classList.remove("active");
+  selectedFriendForTrade = null;
+}
+
+async function loadFriendDuplicatesList(friendId, searchQuery) {
+  const container = document.getElementById("friend-duplicates-grid");
+  if (!container) return;
+
+  container.replaceChildren();
+
+  const loadingP = document.createElement("p");
+  loadingP.className = "status-text";
+  loadingP.textContent = "Carregando repetidas do amigo...";
+  container.appendChild(loadingP);
+
+  try {
+    const { data: duplicates, error } = await supabaseClient.rpc("get_friend_duplicates", {
+      p_friend_id: friendId,
+      p_search_query: searchQuery
+    });
+
+    if (error) throw error;
+
+    container.replaceChildren();
+
+    if (!duplicates || duplicates.length === 0) {
+      const emptyP = document.createElement("p");
+      emptyP.className = "status-text";
+      emptyP.textContent = searchQuery ? "Nenhuma figurinha encontrada para essa busca." : "Este amigo não possui figurinhas repetidas no momento.";
+      container.appendChild(emptyP);
+      return;
+    }
+
+    duplicates.forEach(stk => {
+      const card = document.createElement("div");
+      card.className = `card rarity-${encodeURIComponent(stk.rarity)}`;
+
+      const img = document.createElement("img");
+      img.src = stk.image_url;
+      img.alt = stk.title;
+
+      const titleDiv = document.createElement("div");
+      titleDiv.className = "card-title";
+      titleDiv.textContent = `#${stk.sticker_id} - ${stk.title}`;
+
+      const badge = document.createElement("div");
+      badge.className = "badge badge-duplicate";
+      badge.textContent = `x${stk.quantity}`;
+
+      const btnTrade = document.createElement("button");
+      btnTrade.className = "nav-btn active btn-recycle";
+      btnTrade.style.marginTop = "8px";
+      btnTrade.textContent = "🔄 PROPOR TROCA";
+      btnTrade.onclick = (e) => {
+        e.stopPropagation();
+        openTradeProposalModal(stk);
+      };
+
+      card.appendChild(img);
+      card.appendChild(titleDiv);
+      card.appendChild(badge);
+      card.appendChild(btnTrade);
+
+      container.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error("Erro ao carregar repetidas do amigo:", err);
+    container.replaceChildren();
+    showGameAlert(err.message || "Erro ao consultar inventário do amigo.", "Erro", "⚠️");
+  }
+}
+
+function openTradeProposalModal(targetSticker) {
+  selectedTargetStickerForTrade = targetSticker;
+  const overlay = document.getElementById("trade-proposal-overlay");
+  const slotContainer = document.getElementById("trade-want-card-slot");
+  const selectEl = document.getElementById("trade-offer-sticker-select");
+
+  if (!overlay || !slotContainer || !selectEl) return;
+
+  slotContainer.replaceChildren();
+  const card = document.createElement("div");
+  card.className = `card rarity-${encodeURIComponent(targetSticker.rarity)}`;
+  
+  const img = document.createElement("img");
+  img.src = targetSticker.image_url;
+  img.alt = targetSticker.title;
+
+  const titleDiv = document.createElement("div");
+  titleDiv.className = "card-title";
+  titleDiv.textContent = `#${targetSticker.sticker_id}`;
+
+  card.appendChild(img);
+  card.appendChild(titleDiv);
+  slotContainer.appendChild(card);
+
+  selectEl.replaceChildren();
+  const userDuplicates = allStickers.filter(s => (userInventory[s.id] || 0) > 1);
+
+  if (userDuplicates.length === 0) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "Você não tem repetidas para oferecer!";
+    selectEl.appendChild(opt);
+  } else {
+    const defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    defaultOpt.textContent = "Escolha sua figurinha repetida...";
+    selectEl.appendChild(defaultOpt);
+
+    userDuplicates.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = `#${s.id} - ${s.title} (${s.rarity.toUpperCase()})`;
+      selectEl.appendChild(opt);
+    });
+  }
+
+  overlay.classList.add("active");
+}
+
+function closeTradeProposalModal() {
+  document.getElementById("trade-proposal-overlay")?.classList.remove("active");
+  selectedTargetStickerForTrade = null;
+}
+
+async function submitTradeProposal() {
+  const selectEl = document.getElementById("trade-offer-sticker-select");
+  if (!selectEl || !selectedFriendForTrade || !selectedTargetStickerForTrade) return;
+
+  const offeredStickerId = selectEl.value;
+  if (!offeredStickerId) {
+    return showGameAlert("Selecione uma das suas figurinhas repetidas para oferecer!", "Aviso", "⚠️");
+  }
+
+  try {
+    const { data, error } = await supabaseClient.from("trades").insert([{
+      sender_id: currentUser.id,
+      receiver_id: selectedFriendForTrade.id,
+      sender_sticker_id: offeredStickerId,
+      receiver_sticker_id: selectedTargetStickerForTrade.sticker_id,
+      status: "pending"
+    }]).select();
+
+    if (error) throw error;
+
+    closeTradeProposalModal();
+    closeFriendDuplicatesModal();
+
+    showGameAlert("Proposta de troca enviada com sucesso! Seu amigo poderá aceitar ou recusar no perfil dele.", "Proposta Enviada!", "🚀");
+
+  } catch (err) {
+    console.error("Erro ao enviar proposta de troca:", err);
+    showGameAlert(err.message || "Falha ao registrar a proposta de troca.", "Erro", "⚠️");
   }
 }
 
