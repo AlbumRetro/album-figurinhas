@@ -110,7 +110,7 @@
         </div>
       </div>
 
-      <!-- ABA 3: PERFIL DO USUÁRIO & PASSE DIÁRIO -->
+      <!-- ABA 3: PERFIL DO USUÁRIO & PASSE DIÁRIO & AMIGOS -->
       <div id="tab-perfil" class="tab-content">
         <div class="profile-page-container">
           
@@ -142,6 +142,41 @@
 
               <div class="gamer-actions">
                 <button class="reset-btn logout-btn" onclick="handleLogout()">Sair 🚪</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- MÓDULO DE AMIGOS & BUSCA P2P -->
+          <div class="friends-module-container">
+            <h3 class="section-subtitle">👥 REDE DE AMIGOS & SOCIEDADE P2P</h3>
+            
+            <!-- BUSCA DE AMIGOS -->
+            <div class="friends-search-box">
+              <div class="search-input-group">
+                <input 
+                  type="text" 
+                  id="friend-search-input" 
+                  placeholder="Buscar por Nome#TAG ou @handle..." 
+                  class="form-input friend-input"
+                />
+                <button class="nav-btn active btn-search-friend" onclick="handleSearchFriend()">
+                  🔍 BUSCAR
+                </button>
+              </div>
+              <div id="friends-search-results" class="friends-results-list"></div>
+            </div>
+
+            <!-- SOLICITAÇÕES PENDENTES -->
+            <div id="friends-requests-section" class="friends-sub-section" style="display: none;">
+              <h4 class="friends-sub-title">📩 SOLICITAÇÕES RECEBIDAS</h4>
+              <div id="friends-requests-list" class="friends-cards-list"></div>
+            </div>
+
+            <!-- LISTA DE AMIGOS -->
+            <div class="friends-sub-section">
+              <h4 class="friends-sub-title">🤝 MEUS AMIGOS</h4>
+              <div id="friends-active-list" class="friends-cards-list">
+                <p class="status-text">Buscando lista de amigos...</p>
               </div>
             </div>
           </div>
