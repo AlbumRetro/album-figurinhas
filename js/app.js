@@ -132,14 +132,19 @@ async function initAuthenticatedUser(authUser) {
     .eq("id", authUser.id)
     .maybeSingle();
 
+  const googleAvatar = authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || null;
+  const googleEmail = authUser.email || null;
+  const googleName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email;
+
   if (!profile) {
-    const googleName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email;
     const { data: newProfile, error: createError } = await supabaseClient
       .from("profiles")
       .upsert([{ 
         id: authUser.id,
-        youtube_handle: authUser.email, 
+        youtube_handle: authUser.user_metadata?.preferred_username || null, 
         display_name: googleName, 
+        email: googleEmail,
+        avatar_url: googleAvatar,
         global_points: 1000, 
         role: "user" 
       }], { onConflict: "id" })
@@ -150,17 +155,28 @@ async function initAuthenticatedUser(authUser) {
     profile = newProfile;
   } else if (error) {
     return showGameAlert("Erro ao consultar perfil: " + error.message, "ERRO DE PERFIL");
+  } else {
+    // Sincroniza foto e email se estiverem desatualizados
+    if (profile.avatar_url !== googleAvatar || profile.email !== googleEmail) {
+      const { data: updatedProfile } = await supabaseClient
+        .from("profiles")
+        .update({ 
+          avatar_url: googleAvatar,
+          email: googleEmail
+        })
+        .eq("id", authUser.id)
+        .select()
+        .single();
+
+      if (updatedProfile) profile = updatedProfile;
+    }
   }
 
   currentUser = profile;
   globalPoints = profile.global_points || 0;
 
-  const userDisplay = document.getElementById("user-email-display");
-  if (userDisplay) {
-    userDisplay.textContent = profile.display_name;
-  }
-
   updateUserRoleUI(profile.role);
+  updateProfileUI(profile);
   updatePointsDisplay();
 
   await loadCatalogAndInventory();
@@ -170,6 +186,11 @@ async function initAuthenticatedUser(authUser) {
 }
 
 function updateUserRoleUI(role) {
+  const adminHeader = document.getElementById("admin-header-bar");
+  if (adminHeader) {
+    adminHeader.style.display = (role === "admin" || role === "superadmin") ? "flex" : "none";
+  }
+
   const btnAdmin = document.getElementById("btn-admin-tab");
   if (btnAdmin) btnAdmin.style.display = (role === "admin" || role === "superadmin") ? "inline-block" : "none";
 
@@ -177,9 +198,41 @@ function updateUserRoleUI(role) {
   if (btnSuperadmin) btnSuperadmin.style.display = (role === "superadmin") ? "inline-block" : "none";
 }
 
+function updateProfileUI(profile) {
+  if (!profile) return;
+
+  const userDisplay = document.getElementById("user-email-display");
+  if (userDisplay) {
+    userDisplay.textContent = profile.display_name || "Usuário";
+  }
+
+  const nameEl = document.getElementById("profile-display-name");
+  if (nameEl) nameEl.textContent = profile.display_name || "Usuário Anônimo";
+
+  const tagEl = document.getElementById("profile-tag");
+  if (tagEl) tagEl.textContent = profile.tag ? `#${profile.tag}` : "#0000";
+
+  const emailEl = document.getElementById("profile-email");
+  if (emailEl) emailEl.textContent = profile.email ? `🔒 ${profile.email}` : "🔒 E-mail não informado";
+
+  const handleEl = document.getElementById("profile-handle");
+  if (handleEl) {
+    handleEl.textContent = profile.youtube_handle ? `@${profile.youtube_handle}` : "";
+    handleEl.style.display = profile.youtube_handle ? "block" : "none";
+  }
+
+  const avatarEl = document.getElementById("profile-avatar-img");
+  if (avatarEl) {
+    avatarEl.src = profile.avatar_url || "https://via.placeholder.com/100?text=USER";
+  }
+}
+
 function updatePointsDisplay() {
   const display = document.getElementById("points-display");
   if (display) display.textContent = `SALDO: ${globalPoints} PONTOS`;
+
+  const profilePoints = document.getElementById("profile-points-balance");
+  if (profilePoints) profilePoints.textContent = `${globalPoints} PTS`;
 }
 
 async function loadCatalogAndInventory() {
@@ -200,6 +253,7 @@ async function loadCatalogAndInventory() {
       globalPoints = profile.global_points || 0;
       currentUser = profile;
       updatePointsDisplay();
+      updateProfileUI(profile);
     }
 
     const { data: inventory } = await supabaseClient
@@ -239,7 +293,6 @@ function renderDailyPassUI() {
 
   const isClaimedToday = lastClaim === todaySP;
 
-  // Determina qual o próximo dia da sequência
   let nextDayToClaim = 1;
   if (lastClaim) {
     const lastDateObj = new Date(lastClaim);
@@ -251,11 +304,10 @@ function renderDailyPassUI() {
     } else if (diffDays === 1 && currentStreak < 7) {
       nextDayToClaim = currentStreak + 1;
     } else {
-      nextDayToClaim = 1; // Perdeu o streak ou completou o ciclo
+      nextDayToClaim = 1;
     }
   }
 
-  // Renderiza os 7 cards do passe
   PASS_REWARDS.forEach((reward, index) => {
     const dayNumber = index + 1;
     const card = document.createElement("div");
@@ -299,7 +351,6 @@ function renderDailyPassUI() {
     grid.appendChild(card);
   });
 
-  // Estado do botão principal
   if (btn) {
     if (isClaimedToday) {
       btn.disabled = true;
@@ -312,7 +363,6 @@ function renderDailyPassUI() {
   }
 }
 
-// EXECUTA O RESGATE DO PASSE VIA SUPABASE
 async function handleClaimDailyPass() {
   try {
     const { data, error } = await supabaseClient.rpc("claim_daily_pass");
@@ -345,7 +395,6 @@ async function handleClaimDailyPass() {
   }
 }
 
-// TEMPORIZADOR REGRESSIVO EM TEMPO REAL PARA A MEIA-NOITE DE SP
 function startPassCountdown() {
   if (countdownInterval) clearInterval(countdownInterval);
 
@@ -353,11 +402,9 @@ function startPassCountdown() {
     const timerEl = document.getElementById("pass-countdown-timer");
     if (!timerEl) return;
 
-    // Obtém o horário atual em São Paulo
     const nowSPStr = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
     const nowSP = new Date(nowSPStr);
 
-    // Próxima meia-noite em São Paulo
     const nextResetSP = new Date(nowSP);
     nextResetSP.setHours(24, 0, 0, 0);
 
@@ -391,7 +438,10 @@ function switchTab(tabName, event) {
 
   if (tabName === "album") renderAlbum();
   if (tabName === "shop") renderShop();
-  if (tabName === "pass") renderDailyPassUI();
+  if (tabName === "perfil") {
+    renderDailyPassUI();
+    if (currentUser) updateProfileUI(currentUser);
+  }
   if (tabName === "inventory") renderInventory();
 }
 
