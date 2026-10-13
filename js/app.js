@@ -49,14 +49,16 @@ let currentPackIndex = 0;
 // VALORES DO PASSE DE 7 DIAS
 const PASS_REWARDS = [100, 150, 200, 250, 300, 400, 1000];
 
-// FUNÇÕES DO ALERT GAMIFICADO
-function showGameAlert(message, title = "OPERAÇÃO BLOQUEADA") {
+// FUNÇÕES DO ALERT GAMIFICADO (COM ICONOGRAFIA REVISADA)
+function showGameAlert(message, title = "Aviso do Sistema", icon = "ℹ️") {
   const overlay = document.getElementById("game-alert-overlay");
   const titleEl = document.getElementById("game-alert-title");
   const msgEl = document.getElementById("game-alert-message");
+  const iconEl = overlay?.querySelector(".alert-defeat-icon");
 
   if (titleEl) titleEl.textContent = title;
   if (msgEl) msgEl.textContent = message;
+  if (iconEl) iconEl.textContent = icon;
   if (overlay) overlay.classList.add("active");
 }
 
@@ -88,10 +90,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     showLoginScreen();
   }
 
-  // ATALHO ENTER NA BUSCA DE AMIGOS (UX MEHORADA)
-  const friendInput = document.getElementById("friend-search-input");
-  if (friendInput) {
-    friendInput.addEventListener("keydown", (event) => {
+  // ATALHO PARA BUSCA DE AMIGOS COM A TECLA ENTER (UX MELHORADA)
+  const friendSearchInput = document.getElementById("friend-search-input");
+  if (friendSearchInput) {
+    friendSearchInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
         handleSearchFriend();
@@ -124,10 +126,10 @@ async function loginWithGoogle() {
         redirectTo: window.location.origin + window.location.pathname
       }
     });
-    if (error) showGameAlert("Erro ao autenticar com o Google: " + error.message, "ERRO DE AUTH");
+    if (error) showGameAlert("Erro ao autenticar com o Google: " + error.message, "Erro de Autenticação", "⚠️");
   } catch (err) {
     console.error("Erro ao chamar login Google:", err);
-    showGameAlert("Falha ao iniciar autenticação com o Google.", "ERRO DE AUTH");
+    showGameAlert("Falha ao iniciar autenticação com o Google.", "Erro de Autenticação", "⚠️");
   }
 }
 
@@ -166,10 +168,10 @@ async function initAuthenticatedUser(authUser) {
       .select()
       .single();
 
-    if (createError) return showGameAlert("Erro ao criar perfil: " + createError.message, "ERRO DE PERFIL");
+    if (createError) return showGameAlert("Erro ao criar perfil: " + createError.message, "Erro de Perfil", "⚠️");
     profile = newProfile;
   } else if (error) {
-    return showGameAlert("Erro ao consultar perfil: " + error.message, "ERRO DE PERFIL");
+    return showGameAlert("Erro ao consultar perfil: " + error.message, "Erro de Perfil", "⚠️");
   } else {
     // Sincroniza foto e email se estiverem desatualizados
     if (profile.avatar_url !== googleAvatar || profile.email !== googleEmail) {
@@ -411,12 +413,13 @@ async function handleClaimDailyPass() {
 
       showGameAlert(
         `Você resgatou o Dia ${data.current_streak} e recebeu +${data.earned_points} PONTOS!`,
-        "PASSE RESGATADO!"
+        "Passe Resgatado!",
+        "🎁"
       );
     }
   } catch (err) {
     console.error("Erro no resgate do passe:", err);
-    showGameAlert(err.message || "Não foi possível resgatar o passe no momento.", "PASSE INDISPONÍVEL");
+    showGameAlert(err.message || "Não foi possível resgatar o passe no momento.", "Passe Indisponível", "⚠️");
   }
 }
 
@@ -472,7 +475,7 @@ function switchTab(tabName, event) {
 }
 
 // ==============================================================================
-// FASE 3: LÓGICA DO MÓDULO DE AMIGOS & BUSCA P2P
+// FASE 3: LÓGICA DO MÓDULO DE AMIGOS & BUSCA P2P (UX DE BOTÃO DINÂMICO)
 // ==============================================================================
 
 async function handleSearchFriend() {
@@ -491,6 +494,7 @@ async function handleSearchFriend() {
   resultsContainer.appendChild(loadingP);
 
   try {
+    // Busca os usuários encontrados pelo termo
     const { data: users, error } = await supabaseClient.rpc("search_user_for_friendship", {
       p_search_query: query
     });
@@ -505,6 +509,22 @@ async function handleSearchFriend() {
       emptyP.textContent = "Nenhum usuário encontrado com esse termo.";
       resultsContainer.appendChild(emptyP);
       return;
+    }
+
+    // Consulta o estado atual de amizade/pedidos entre o usuário atual e os encontrados
+    const userIds = users.map(u => u.id);
+    const { data: existingRelationships } = await supabaseClient
+      .from("friendships")
+      .select("user_id, friend_id, status")
+      .or(`and(user_id.eq.${currentUser.id},friend_id.in.(${userIds.join(",")})),and(friend_id.eq.${currentUser.id},user_id.in.(${userIds.join(",")}))`);
+
+    // Mapeia os status das amizades para renderizar o botão correto
+    const friendshipMap = {};
+    if (existingRelationships) {
+      existingRelationships.forEach(rel => {
+        const otherId = rel.user_id === currentUser.id ? rel.friend_id : rel.user_id;
+        friendshipMap[otherId] = rel.status;
+      });
     }
 
     users.forEach(u => {
@@ -541,10 +561,23 @@ async function handleSearchFriend() {
       const actionBox = document.createElement("div");
       actionBox.className = "friend-action-btns";
 
+      const status = friendshipMap[u.id];
       const btnAdd = document.createElement("button");
-      btnAdd.className = "btn-friend-action btn-friend-accept";
-      btnAdd.textContent = "➕ ADICIONAR";
-      btnAdd.onclick = () => sendFriendRequest(u.id);
+      btnAdd.id = `btn-friend-action-${u.id}`;
+
+      if (status === "accepted") {
+        btnAdd.className = "btn-friend-action btn-friend-disabled";
+        btnAdd.textContent = "🤝 AMIGOS";
+        btnAdd.disabled = true;
+      } else if (status === "pending") {
+        btnAdd.className = "btn-friend-action btn-friend-pending";
+        btnAdd.textContent = "⏳ PENDENTE";
+        btnAdd.disabled = true;
+      } else {
+        btnAdd.className = "btn-friend-action btn-friend-accept";
+        btnAdd.textContent = "➕ ADICIONAR";
+        btnAdd.onclick = () => sendFriendRequestInline(u.id);
+      }
 
       actionBox.appendChild(btnAdd);
       card.appendChild(infoBox);
@@ -555,11 +588,17 @@ async function handleSearchFriend() {
   } catch (err) {
     console.error("Erro ao buscar usuários:", err);
     resultsContainer.replaceChildren();
-    showGameAlert(err.message || "Erro ao realizar busca.", "ERRO DE BUSCA");
+    showGameAlert(err.message || "Erro ao realizar busca.", "Erro de Busca", "⚠️");
   }
 }
 
-async function sendFriendRequest(targetUserId) {
+async function sendFriendRequestInline(targetUserId) {
+  const btn = document.getElementById(`btn-friend-action-${targetUserId}`);
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "ENVIANDO...";
+  }
+
   try {
     const { data, error } = await supabaseClient.rpc("send_friend_request", {
       p_target_user_id: targetUserId
@@ -568,17 +607,29 @@ async function sendFriendRequest(targetUserId) {
     if (error) throw error;
 
     if (data) {
-      showGameAlert(data.message, data.success ? "SOLICITAÇÃO ENVIADA" : "AVISO");
-      if (data.success) {
-        document.getElementById("friends-search-results")?.replaceChildren();
-        const inputEl = document.getElementById("friend-search-input");
-        if (inputEl) inputEl.value = "";
+      if (data.success || data.message?.includes("já existe")) {
+        // MUDA O BOTÃO EM TEMPO REAL SEM APAGAR A BUSCA NEM MOSTRAR POPUP
+        if (btn) {
+          btn.className = "btn-friend-action btn-friend-pending";
+          btn.textContent = "⏳ PENDENTE";
+          btn.disabled = true;
+        }
         await loadFriendsAndRequests();
+      } else {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "➕ ADICIONAR";
+        }
+        showGameAlert(data.message, "Aviso", "ℹ️");
       }
     }
   } catch (err) {
     console.error("Erro ao enviar solicitação:", err);
-    showGameAlert(err.message || "Falha ao enviar convite.", "ERRO DE CONEXÃO");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "➕ ADICIONAR";
+    }
+    showGameAlert(err.message || "Falha ao enviar convite.", "Erro de Conexão", "⚠️");
   }
 }
 
@@ -744,15 +795,10 @@ async function respondFriendRequest(friendshipId, newStatus) {
 
     if (error) throw error;
 
-    showGameAlert(
-      newStatus === "accepted" ? "Solicitação de amizade aceita!" : "Solicitação recusada.",
-      "AMIZADE"
-    );
-
     await loadFriendsAndRequests();
   } catch (err) {
     console.error("Erro ao responder solicitação:", err);
-    showGameAlert(err.message || "Erro ao atualizar status.", "ERRO");
+    showGameAlert(err.message || "Erro ao atualizar status.", "Erro", "⚠️");
   }
 }
 
@@ -956,7 +1002,8 @@ async function handleRecycleSticker(stickerId, unitValue) {
 
       showGameAlert(
         `Você reciclou ${quantity} repetida(s) e recebeu +${data.earned_points} PONTOS!`,
-        "RECICLAGEM CONCLUÍDA"
+        "Reciclagem Concluída",
+        "♻️"
       );
 
       await loadCatalogAndInventory();
@@ -964,7 +1011,7 @@ async function handleRecycleSticker(stickerId, unitValue) {
     }
   } catch (err) {
     console.error("Erro na reciclagem:", err);
-    showGameAlert(err.message || "Falha ao processar a venda de repetidas.", "ERRO NA OPERAÇÃO");
+    showGameAlert(err.message || "Falha ao processar a venda de repetidas.", "Erro na Operação", "⚠️");
   }
 }
 
@@ -1129,7 +1176,7 @@ function setupSwipeEvents(element) {
 
 async function startUnboxingCeremony(pack) {
   if (globalPoints < pack.cost_points) {
-    return showGameAlert("Pontos insuficientes para adquirir este pacote!", "SALDO INSUFICIENTE");
+    return showGameAlert("Pontos insuficientes para adquirir este pacote!", "Saldo Insuficiente", "⚠️");
   }
 
   try {
@@ -1138,7 +1185,7 @@ async function startUnboxingCeremony(pack) {
     });
 
     if (error) {
-      return showGameAlert(error.message, "FALHA NA COMPRA");
+      return showGameAlert(error.message, "Falha na Compra", "⚠️");
     }
 
     const ceremonyOverlay = document.getElementById("loot-ceremony-overlay");
@@ -1173,7 +1220,7 @@ async function startUnboxingCeremony(pack) {
     }, 2800);
 
   } catch (err) {
-    showGameAlert("Erro ao conectar com o servidor: " + err.message, "ERRO DE CONEXÃO");
+    showGameAlert("Erro ao conectar com o servidor: " + err.message, "Erro de Conexão", "⚠️");
   }
 }
 
@@ -1283,7 +1330,7 @@ function closeInspect() {
 
 async function createStickerBySuperadmin() {
   if (!currentUser || currentUser.role !== "superadmin") {
-    return showGameAlert("Acesso negado: apenas o Superadmin pode cadastrar figurinhas.", "ACESSO NEGADO");
+    return showGameAlert("Acesso negado: apenas o Superadmin pode cadastrar figurinhas.", "Acesso Negado", "🔒");
   }
 
   const id = document.getElementById("sticker-id").value.trim();
@@ -1291,7 +1338,7 @@ async function createStickerBySuperadmin() {
   const imageUrl = document.getElementById("sticker-url").value.trim();
   const rarity = document.getElementById("sticker-rarity").value;
 
-  if (!id || !title || !imageUrl) return showGameAlert("Preencha todos os campos da figurinha!", "CAMPOS INCOMPLETOS");
+  if (!id || !title || !imageUrl) return showGameAlert("Preencha todos os campos da figurinha!", "Campos Incompletos", "⚠️");
 
   const { error } = await supabaseClient.from("stickers").insert([{
     id: id,
@@ -1301,9 +1348,9 @@ async function createStickerBySuperadmin() {
     channel_id: "00000000-0000-0000-0000-000000000000"
   }]);
 
-  if (error) return showGameAlert("Erro ao cadastrar figurinha: " + error.message, "ERRO AO CADASTRAR");
+  if (error) return showGameAlert("Erro ao cadastrar figurinha: " + error.message, "Erro ao Cadastrar", "⚠️");
 
-  showGameAlert("Figurinha cadastrada com sucesso!", "SUCESSO");
+  showGameAlert("Figurinha cadastrada com sucesso!", "Sucesso", "✅");
   await loadCatalogAndInventory();
   renderAlbum();
 }
