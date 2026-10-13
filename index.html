@@ -114,52 +114,57 @@
       <div id="tab-perfil" class="tab-content">
         <div class="profile-page-container">
           
-          <!-- CARD DE DADOS DO USUÁRIO -->
-          <div class="profile-header-card">
-            <div class="profile-avatar-wrapper">
-              <img id="profile-avatar-img" src="https://via.placeholder.com/100?text=USER" alt="Foto de Perfil" class="profile-avatar-img" />
-            </div>
+          <!-- CARD ESTILO GAMER CARD / DISCORD -->
+          <div class="gamer-card-wrapper">
+            <div class="gamer-card-banner"></div>
             
-            <div class="profile-info-box">
-              <h2 class="profile-name-heading">
-                <span id="profile-display-name">Carregando...</span>
-                <span id="profile-tag" class="profile-tag-badge">#0000</span>
-              </h2>
-              <p id="profile-handle" class="profile-handle-text" style="display: none;"></p>
-              <p id="profile-email" class="profile-email-text">🔒 login@exemplo.com</p>
-              
-              <div class="profile-balance-chip">
-                <span>⚡ SALDO GLOBAL:</span>
-                <strong id="profile-points-balance">0 PTS</strong>
+            <div class="gamer-card-body">
+              <div class="gamer-avatar-container">
+                <img id="profile-avatar-img" src="https://via.placeholder.com/100?text=USER" alt="Avatar" class="gamer-avatar-img" />
               </div>
-            </div>
 
-            <div class="profile-actions-box">
-              <button class="reset-btn logout-btn" onclick="handleLogout()">
-                Sair da Conta 🚪
-              </button>
+              <div class="gamer-card-details">
+                <div class="gamer-identity">
+                  <h2 id="profile-display-name" class="gamer-name">Carregando...</h2>
+                  <span id="profile-tag" class="gamer-tag-badge">#0000</span>
+                </div>
+                
+                <p id="profile-handle" class="gamer-handle" style="display: none;"></p>
+                
+                <div class="gamer-meta-row">
+                  <div class="gamer-chip">
+                    <span class="chip-label">SALDO:</span>
+                    <strong id="profile-points-balance" class="chip-value">0 PTS</strong>
+                  </div>
+                  <div id="profile-email" class="gamer-email-private">🔒 login@exemplo.com</div>
+                </div>
+              </div>
+
+              <div class="gamer-actions">
+                <button class="reset-btn logout-btn" onclick="handleLogout()">Sair 🚪</button>
+              </div>
             </div>
           </div>
 
-          <!-- SEÇÃO DE INSÍGNIAS / CONQUISTAS (PLACEHOLDERS) -->
-          <div class="badges-section-container">
-            <h3 class="section-subtitle">🏅 INSÍGNIAS & CONQUISTAS</h3>
-            <div class="badges-grid-wrapper">
-              <div class="badge-slot active" title="Participante Beta">
-                <div class="badge-icon-frame">🌟</div>
-                <span class="badge-title-text">BETA</span>
+          <!-- INSÍGNIAS (GRID DE CONQUISTAS) -->
+          <div class="achievements-section">
+            <h3 class="section-subtitle">🏅 INSÍGNIAS E CONQUISTAS</h3>
+            <div class="achievements-grid">
+              <div class="achievement-card unlocked" title="Participante da Versão Beta">
+                <div class="achievement-icon">🌟</div>
+                <div class="achievement-name">BETA</div>
               </div>
-              <div class="badge-slot locked" title="Mestre do Passe Diário">
-                <div class="badge-icon-frame">🔒</div>
-                <span class="badge-title-text">FIDELIDADE</span>
+              <div class="achievement-card locked" title="Mestre do Passe Diário">
+                <div class="achievement-icon">🔒</div>
+                <div class="achievement-name">FIDELIDADE</div>
               </div>
-              <div class="badge-slot locked" title="Coleção Completa">
-                <div class="badge-icon-frame">🔒</div>
-                <span class="badge-title-text">MESTRE</span>
+              <div class="achievement-card locked" title="Coleção Completa">
+                <div class="achievement-icon">🔒</div>
+                <div class="achievement-name">MESTRE</div>
               </div>
-              <div class="badge-slot locked" title="Trader P2P">
-                <div class="badge-icon-frame">🔒</div>
-                <span class="badge-title-text">COMERCIANTE</span>
+              <div class="achievement-card locked" title="Comerciante P2P">
+                <div class="achievement-icon">🔒</div>
+                <div class="achievement-name">TRADER</div>
               </div>
             </div>
           </div>
