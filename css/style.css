@@ -243,6 +243,168 @@ nav {
   padding-top: 45px;
 }
 
+/* ==============================================================================
+   MÓDULO DE AMIGOS & BUSCA P2P (NOVO)
+   ============================================================================== */
+.friends-module-container {
+  background: rgba(18, 8, 38, 0.95);
+  border: 2px solid #00ffff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: left;
+}
+
+.friends-search-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #0d041e;
+  border: 1px solid #ff007f;
+  padding: 15px;
+  border-radius: 12px;
+}
+
+.search-input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.friend-input {
+  flex-grow: 1;
+  background: #120826;
+  border: 2px solid #00ffff;
+  color: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.friend-input:focus {
+  outline: none;
+  border-color: #ff007f;
+  box-shadow: 0 0 12px #ff007f;
+}
+
+.btn-search-friend {
+  padding: 12px 18px !important;
+  font-size: 0.75rem !important;
+  white-space: nowrap;
+}
+
+.friends-results-list,
+.friends-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.friends-sub-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.friends-sub-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.75rem;
+  color: #ffff00;
+  margin: 5px 0;
+}
+
+/* CARD INDIVIDUAL DE USUÁRIO NAS LISTAS DE AMIGOS */
+.friend-user-card {
+  background: #120826;
+  border: 1px solid #00ffff;
+  border-radius: 10px;
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.friend-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.friend-avatar-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid #ff007f;
+  object-fit: cover;
+  background: #000;
+}
+
+.friend-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.friend-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.friend-display-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.75rem;
+  color: #fff;
+}
+
+.friend-tag-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.65rem;
+  color: #ffff00;
+}
+
+.friend-action-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-friend-action {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-friend-accept {
+  background: #00ff66;
+  color: #000;
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.5);
+}
+
+.btn-friend-accept:hover {
+  background: #66ff99;
+  transform: scale(1.05);
+}
+
+.btn-friend-reject {
+  background: #ff0055;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+}
+
+.btn-friend-reject:hover {
+  background: #ff3377;
+  transform: scale(1.05);
+}
+
 /* GRID DE INSÍGNIAS (ESTILO CONQUISTAS STEAM) */
 .achievements-section {
   background: rgba(18, 8, 38, 0.8);
@@ -275,6 +437,12 @@ nav {
   }
   .gamer-actions {
     padding-top: 10px;
+  }
+  .search-input-group {
+    flex-direction: column;
+  }
+  .btn-search-friend {
+    width: 100%;
   }
 }
 
