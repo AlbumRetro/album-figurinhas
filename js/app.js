@@ -135,13 +135,17 @@ async function initAuthenticatedUser(authUser) {
   const googleAvatar = authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || null;
   const googleEmail = authUser.email || null;
   const googleName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email;
+  
+  // Garante que o handle seja válido e não um e-mail
+  const preferredHandle = authUser.user_metadata?.preferred_username || null;
+  const validHandle = (preferredHandle && !preferredHandle.includes("@")) ? preferredHandle : null;
 
   if (!profile) {
     const { data: newProfile, error: createError } = await supabaseClient
       .from("profiles")
       .upsert([{ 
         id: authUser.id,
-        youtube_handle: authUser.user_metadata?.preferred_username || null, 
+        youtube_handle: validHandle, 
         display_name: googleName, 
         email: googleEmail,
         avatar_url: googleAvatar,
@@ -215,10 +219,19 @@ function updateProfileUI(profile) {
   const emailEl = document.getElementById("profile-email");
   if (emailEl) emailEl.textContent = profile.email ? `🔒 ${profile.email}` : "🔒 E-mail não informado";
 
+  // TRATAMENTO DE HANDLE PÚBLICO (Esconde se for nulo, contiver '@' ou for o próprio e-mail)
   const handleEl = document.getElementById("profile-handle");
   if (handleEl) {
-    handleEl.textContent = profile.youtube_handle ? `@${profile.youtube_handle}` : "";
-    handleEl.style.display = profile.youtube_handle ? "block" : "none";
+    const isInvalidHandle = !profile.youtube_handle || 
+                            profile.youtube_handle.includes("@") || 
+                            profile.youtube_handle === profile.email;
+
+    if (!isInvalidHandle) {
+      handleEl.textContent = `@${profile.youtube_handle}`;
+      handleEl.style.display = "block";
+    } else {
+      handleEl.style.display = "none";
+    }
   }
 
   const avatarEl = document.getElementById("profile-avatar-img");
