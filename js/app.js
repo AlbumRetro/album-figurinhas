@@ -87,6 +87,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Erro na inicialização da sessão:", err);
     showLoginScreen();
   }
+
+  // ATALHO ENTER NA BUSCA DE AMIGOS (UX MEHORADA)
+  const friendInput = document.getElementById("friend-search-input");
+  if (friendInput) {
+    friendInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleSearchFriend();
+      }
+    });
+  }
 });
 
 function hideLoginScreen() {
@@ -491,7 +502,7 @@ async function handleSearchFriend() {
     if (!users || users.length === 0) {
       const emptyP = document.createElement("p");
       emptyP.className = "status-text";
-      emptyP.textContent = "Nenhum usuário encontrado com esse Nome#TAG ou @handle.";
+      emptyP.textContent = "Nenhum usuário encontrado com esse termo.";
       resultsContainer.appendChild(emptyP);
       return;
     }
