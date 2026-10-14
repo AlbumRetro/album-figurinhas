@@ -132,6 +132,7 @@ nav {
   display: flex;
   flex-direction: column;
   gap: 25px;
+  width: 100%;
 }
 
 .gamer-card-wrapper {
@@ -256,6 +257,8 @@ nav {
   flex-direction: column;
   gap: 20px;
   text-align: left;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .friends-search-box {
@@ -406,59 +409,81 @@ nav {
 }
 
 /* ==============================================================================
-   MESA DE TROCAS SPLIT-SCREEN & CONTRATO FIXO INFERIOR
+   MESA DE TROCAS SPLIT-SCREEN & CONTRATO FIXO INFERIOR (100% CORRIGIDO)
    ============================================================================== */
+#friend-trade-stage {
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
 .trade-split-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 15px;
   margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .trade-column {
   background: #0d041e;
   border: 1px solid #ff007f;
   border-radius: 12px;
-  padding: 15px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
+  min-width: 0; /* IMPEDE A COLUNA DE ESTRAGAR A TELA */
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .trade-grid-scroll {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
-  gap: 15px !important;
-  max-height: 420px;
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)) !important;
+  gap: 10px !important;
+  max-height: 380px;
   overflow-y: auto;
-  padding: 10px 5px !important;
+  overflow-x: hidden;
+  padding: 8px 4px !important;
   width: 100% !important;
+  box-sizing: border-box;
 }
 
 .trade-grid-scroll .card {
-  padding: 8px !important;
+  padding: 6px !important;
+  border-width: 2px !important;
+}
+
+.trade-grid-scroll .card img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
 }
 
 .trade-grid-scroll .card .card-title {
-  font-size: 0.65rem !important;
-  margin-top: 6px !important;
+  font-size: 0.55rem !important;
+  margin-top: 4px !important;
 }
 
 .trade-grid-scroll .card.trade-selected {
   border-color: #00ffff !important;
-  box-shadow: 0 0 20px #00ffff !important;
-  transform: scale(1.03);
+  box-shadow: 0 0 15px #00ffff !important;
+  transform: scale(1.02);
 }
 
 .trade-contract-bar {
   background: #120826;
   border: 2px solid #00ffff;
   border-radius: 14px;
-  padding: 15px 20px;
+  padding: 15px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 15px;
+  gap: 10px;
   box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .trade-slot-preview {
@@ -467,11 +492,12 @@ nav {
   gap: 6px;
   align-items: center;
   flex: 1;
+  min-width: 0;
 }
 
 .trade-preview-card {
-  width: 100px;
-  height: 130px;
+  width: 90px;
+  height: 120px;
   border: 2px dashed #ff007f;
   border-radius: 8px;
   display: flex;
@@ -486,7 +512,7 @@ nav {
   height: 100%;
   border: none !important;
   box-shadow: none !important;
-  padding: 4px !important;
+  padding: 2px !important;
 }
 
 .trade-preview-card .card img {
@@ -495,11 +521,11 @@ nav {
 }
 
 .trade-preview-card .card .card-title {
-  font-size: 0.55rem !important;
+  font-size: 0.5rem !important;
 }
 
 .trade-swap-arrow {
-  font-size: 2rem;
+  font-size: 1.5rem;
   color: #ffff00;
   text-shadow: 0 0 10px #ffff00;
 }
