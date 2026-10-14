@@ -110,117 +110,179 @@
         </div>
       </div>
 
-      <!-- ABA 3: PERFIL DO USUÁRIO & PASSE DIÁRIO & AMIGOS -->
+      <!-- ABA 3: PERFIL DO USUÁRIO & PASSE DIÁRIO & AMIGOS & MESA DE TROCAS -->
       <div id="tab-perfil" class="tab-content">
         <div class="profile-page-container">
           
-          <!-- CARD ESTILO GAMER CARD / DISCORD -->
-          <div class="gamer-card-wrapper">
-            <div class="gamer-card-banner"></div>
-            
-            <div class="gamer-card-body">
-              <div class="gamer-avatar-container">
-                <img id="profile-avatar-img" src="https://via.placeholder.com/100?text=USER" alt="Avatar" class="gamer-avatar-img" />
-              </div>
-
-              <div class="gamer-card-details">
-                <div class="gamer-identity">
-                  <h2 id="profile-display-name" class="gamer-name">Carregando...</h2>
-                  <span id="profile-tag" class="gamer-tag-badge">#0000</span>
+          <!-- VISUALIZAÇÃO PADRÃO DO PERFIL -->
+          <div id="profile-default-view">
+            <!-- CARD ESTILO GAMER CARD / DISCORD -->
+            <div class="gamer-card-wrapper">
+              <div class="gamer-card-banner"></div>
+              
+              <div class="gamer-card-body">
+                <div class="gamer-avatar-container">
+                  <img id="profile-avatar-img" src="https://via.placeholder.com/100?text=USER" alt="Avatar" class="gamer-avatar-img" />
                 </div>
-                
-                <p id="profile-handle" class="gamer-handle" style="display: none;"></p>
-                
-                <div class="gamer-meta-row">
-                  <div class="gamer-chip">
-                    <span class="chip-label">SALDO:</span>
-                    <strong id="profile-points-balance" class="chip-value">0 PTS</strong>
+
+                <div class="gamer-card-details">
+                  <div class="gamer-identity">
+                    <h2 id="profile-display-name" class="gamer-name">Carregando...</h2>
+                    <span id="profile-tag" class="gamer-tag-badge">#0000</span>
                   </div>
-                  <div id="profile-email" class="gamer-email-private">🔒 login@exemplo.com</div>
+                  
+                  <p id="profile-handle" class="gamer-handle" style="display: none;"></p>
+                  
+                  <div class="gamer-meta-row">
+                    <div class="gamer-chip">
+                      <span class="chip-label">SALDO:</span>
+                      <strong id="profile-points-balance" class="chip-value">0 PTS</strong>
+                    </div>
+                    <div id="profile-email" class="gamer-email-private">🔒 login@exemplo.com</div>
+                  </div>
+                </div>
+
+                <div class="gamer-actions">
+                  <button class="reset-btn logout-btn" onclick="handleLogout()">Sair 🚪</button>
                 </div>
               </div>
+            </div>
 
-              <div class="gamer-actions">
-                <button class="reset-btn logout-btn" onclick="handleLogout()">Sair 🚪</button>
+            <!-- MÓDULO DE AMIGOS & SOCIEDADE P2P -->
+            <div class="friends-module-container">
+              <h3 class="section-subtitle">👥 REDE DE AMIGOS & SOCIEDADE P2P</h3>
+              
+              <!-- BUSCA DE AMIGOS -->
+              <div class="friends-search-box">
+                <div class="search-input-group">
+                  <input 
+                    type="text" 
+                    id="friend-search-input" 
+                    placeholder="Buscar por Nome#TAG ou @handle..." 
+                    class="form-input friend-input"
+                  />
+                  <button class="nav-btn active btn-search-friend" onclick="handleSearchFriend()">
+                    🔍 BUSCAR
+                  </button>
+                </div>
+                <div id="friends-search-results" class="friends-results-list"></div>
               </div>
+
+              <!-- CENTRAL DE PROPOSTAS DE TROCA -->
+              <div id="trades-proposals-section" class="friends-sub-section" style="display: none;">
+                <h4 class="friends-sub-title">🔄 PROPOSTAS DE TROCA PENDENTES</h4>
+                <div id="trades-proposals-list" class="friends-cards-list"></div>
+              </div>
+
+              <!-- SOLICITAÇÕES PENDENTES DE AMIZADE -->
+              <div id="friends-requests-section" class="friends-sub-section" style="display: none;">
+                <h4 class="friends-sub-title">📩 SOLICITAÇÕES RECEBIDAS</h4>
+                <div id="friends-requests-list" class="friends-cards-list"></div>
+              </div>
+
+              <!-- LISTA DE AMIGOS ATIVOS -->
+              <div class="friends-sub-section">
+                <h4 class="friends-sub-title">🤝 MEUS AMIGOS</h4>
+                <div id="friends-active-list" class="friends-cards-list">
+                  <p class="status-text">Buscando lista de amigos...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- INSÍGNIAS (GRID DE CONQUISTAS) -->
+            <div class="achievements-section">
+              <h3 class="section-subtitle">🏅 INSÍGNIAS E CONQUISTAS</h3>
+              <div class="achievements-grid">
+                <div class="achievement-card unlocked" title="Participante da Versão Beta">
+                  <div class="achievement-icon">🌟</div>
+                  <div class="achievement-name">BETA</div>
+                </div>
+                <div class="achievement-card locked" title="Mestre do Passe Diário">
+                  <div class="achievement-icon">🔒</div>
+                  <div class="achievement-name">FIDELIDADE</div>
+                </div>
+                <div class="achievement-card locked" title="Coleção Completa">
+                  <div class="achievement-icon">🔒</div>
+                  <div class="achievement-name">MESTRE</div>
+                </div>
+                <div class="achievement-card locked" title="Comerciante P2P">
+                  <div class="achievement-icon">🔒</div>
+                  <div class="achievement-name">TRADER</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CONTAINER DO PASSE DIÁRIO DENTRO DO PERFIL -->
+            <div class="pass-container embedded-pass">
+              <h2 class="section-title">⚡ PASSE DE RECOMPENSAS DIÁRIAS</h2>
+              <p class="status-text">Faça login todos os dias para acumular pontos e desbloquear o super bônus no 7º dia!</p>
+              
+              <div class="timer-box">
+                <span class="timer-label">PRÓXIMO RESET EM (HORÁRIO DE SP):</span>
+                <span id="pass-countdown-timer" class="timer-clock">00:00:00</span>
+              </div>
+
+              <div id="pass-streak-grid" class="pass-grid">
+                <!-- Trilha dos 7 Dias Renderizada via JavaScript -->
+              </div>
+
+              <button id="btn-claim-pass" class="nav-btn active btn-pass-claim" onclick="handleClaimDailyPass()">
+                🎁 RESGATAR RECOMPENSA DE HOJE
+              </button>
             </div>
           </div>
 
-          <!-- MÓDULO DE AMIGOS & BUSCA P2P -->
-          <div class="friends-module-container">
-            <h3 class="section-subtitle">👥 REDE DE AMIGOS & SOCIEDADE P2P</h3>
-            
-            <!-- BUSCA DE AMIGOS -->
-            <div class="friends-search-box">
-              <div class="search-input-group">
+          <!-- SUB-TELA: MESA DE TROCAS SPLIT-SCREEN (ENTRA NO LUGAR DO PERFIL QUANDO ATIVA) -->
+          <div id="friend-trade-stage" class="friends-module-container" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #00f0ff; padding-bottom: 10px;">
+              <h3 class="section-subtitle" style="margin: 0;">🤝 MESA DE TROCA: <span id="trade-partner-name">AMIGO</span></h3>
+              <button class="reset-btn logout-btn" onclick="closeTradeStage()">← VOLTAR AOS AMIGOS</button>
+            </div>
+
+            <!-- MESA SPLIT-SCREEN (COLUNA ESQUERDA: AMIGO / COLUNA DIREITA: SUA OFERTA) -->
+            <div class="trade-split-container">
+              <!-- COLUNA ESQUERDA: INVENTÁRIO DO AMIGO -->
+              <div class="trade-column">
+                <h4 class="friends-sub-title">📦 REPETIDAS DO AMIGO</h4>
                 <input 
                   type="text" 
-                  id="friend-search-input" 
-                  placeholder="Buscar por Nome#TAG ou @handle..." 
+                  id="friend-dup-search-input" 
+                  placeholder="Filtrar por nome ou #ID..." 
                   class="form-input friend-input"
+                  style="margin-bottom: 10px; width: 100%;"
                 />
-                <button class="nav-btn active btn-search-friend" onclick="handleSearchFriend()">
-                  🔍 BUSCAR
-                </button>
+                <div id="friend-duplicates-grid" class="grid trade-grid-scroll"></div>
               </div>
-              <div id="friends-search-results" class="friends-results-list"></div>
-            </div>
 
-            <!-- SOLICITAÇÕES PENDENTES -->
-            <div id="friends-requests-section" class="friends-sub-section" style="display: none;">
-              <h4 class="friends-sub-title">📩 SOLICITAÇÕES RECEBIDAS</h4>
-              <div id="friends-requests-list" class="friends-cards-list"></div>
-            </div>
-
-            <!-- LISTA DE AMIGOS -->
-            <div class="friends-sub-section">
-              <h4 class="friends-sub-title">🤝 MEUS AMIGOS</h4>
-              <div id="friends-active-list" class="friends-cards-list">
-                <p class="status-text">Buscando lista de amigos...</p>
+              <!-- COLUNA DIREITA: SUAS REPETIDAS -->
+              <div class="trade-column">
+                <h4 class="friends-sub-title">🎒 SUAS REPETIDAS ELEGÍVEIS</h4>
+                <div id="my-duplicates-grid" class="grid trade-grid-scroll"></div>
               </div>
             </div>
-          </div>
 
-          <!-- INSÍGNIAS (GRID DE CONQUISTAS) -->
-          <div class="achievements-section">
-            <h3 class="section-subtitle">🏅 INSÍGNIAS E CONQUISTAS</h3>
-            <div class="achievements-grid">
-              <div class="achievement-card unlocked" title="Participante da Versão Beta">
-                <div class="achievement-icon">🌟</div>
-                <div class="achievement-name">BETA</div>
+            <!-- BARRA FIXA INFERIOR DO CONTRATO DE TROCA -->
+            <div class="trade-contract-bar">
+              <div class="trade-slot-preview">
+                <span class="chip-label">VOCÊ RECEBE:</span>
+                <div id="trade-slot-want" class="trade-preview-card">
+                  <p class="status-text">(Selecione uma carta do amigo)</p>
+                </div>
               </div>
-              <div class="achievement-card locked" title="Mestre do Passe Diário">
-                <div class="achievement-icon">🔒</div>
-                <div class="achievement-name">FIDELIDADE</div>
+
+              <div class="trade-swap-arrow">⇄</div>
+
+              <div class="trade-slot-preview">
+                <span class="chip-label">VOCÊ OFERECE:</span>
+                <div id="trade-slot-offer" class="trade-preview-card">
+                  <p class="status-text">(Selecione uma repetida sua)</p>
+                </div>
               </div>
-              <div class="achievement-card locked" title="Coleção Completa">
-                <div class="achievement-icon">🔒</div>
-                <div class="achievement-name">MESTRE</div>
-              </div>
-              <div class="achievement-card locked" title="Comerciante P2P">
-                <div class="achievement-icon">🔒</div>
-                <div class="achievement-name">TRADER</div>
-              </div>
+
+              <button class="nav-btn active btn-submit" style="height: 50px; padding: 0 20px;" onclick="submitTradeProposal()">
+                🚀 ENVIAR PROPOSTA
+              </button>
             </div>
-          </div>
-
-          <!-- CONTAINER DO PASSE DIÁRIO DENTRO DO PERFIL -->
-          <div class="pass-container embedded-pass">
-            <h2 class="section-title">⚡ PASSE DE RECOMPENSAS DIÁRIAS</h2>
-            <p class="status-text">Faça login todos os dias para acumular pontos e desbloquear o super bônus no 7º dia!</p>
-            
-            <div class="timer-box">
-              <span class="timer-label">PRÓXIMO RESET EM (HORÁRIO DE SP):</span>
-              <span id="pass-countdown-timer" class="timer-clock">00:00:00</span>
-            </div>
-
-            <div id="pass-streak-grid" class="pass-grid">
-              <!-- Trilha dos 7 Dias Renderizada via JavaScript -->
-            </div>
-
-            <button id="btn-claim-pass" class="nav-btn active btn-pass-claim" onclick="handleClaimDailyPass()">
-              🎁 RESGATAR RECOMPENSA DE HOJE
-            </button>
           </div>
 
         </div>
@@ -287,7 +349,7 @@
         </div>
       </div>
 
-      <!-- MODAL DE INSPEÇÃO -->
+      <!-- MODAL DE INSPEÇÃO DA FIGURINHA -->
       <div
         id="inspect-overlay"
         class="inspect-overlay"
@@ -307,67 +369,6 @@
           <h3 id="game-alert-title" class="alert-title-text">SALDO INSUFICIENTE</h3>
           <p id="game-alert-message" class="alert-message-text"></p>
           <button class="alert-btn-ok" onclick="closeGameAlert()">ENTENDIDO [OK]</button>
-        </div>
-      </div>
-
-      <!-- MODAL: INVENTÁRIO DE REPETIDAS DO AMIGO -->
-      <div id="friend-duplicates-overlay" class="reveal-overlay">
-        <div class="lootbox-modal trade-modal-box">
-          <div class="badge">📦 REPETIDAS DE <span id="friend-dup-name">AMIGO</span></div>
-          <p class="status-text" style="font-size: 0.8rem; margin: 10px 0;">
-            Selecione uma figurinha para solicitar em troca!
-          </p>
-
-          <!-- BUSCA DE FIGURINHA POR NOME OU #ID -->
-          <div class="search-input-group" style="margin-bottom: 15px;">
-            <input 
-              type="text" 
-              id="friend-dup-search-input" 
-              placeholder="Filtrar por nome ou número (#001)..." 
-              class="form-input friend-input"
-            />
-          </div>
-
-          <!-- GRID DE FIGURINHAS REPETIDAS DO AMIGO -->
-          <div id="friend-duplicates-grid" class="grid" style="max-height: 300px; overflow-y: auto; padding: 10px;"></div>
-
-          <button class="reset-btn logout-btn" onclick="closeFriendDuplicatesModal()" style="margin-top: 15px;">
-            FECHAR [X]
-          </button>
-        </div>
-      </div>
-
-      <!-- MODAL: PROPOR TROCA ASSÍNCRONA (P2P TRADE OFFER) -->
-      <div id="trade-proposal-overlay" class="reveal-overlay">
-        <div class="lootbox-modal trade-modal-box">
-          <div class="badge">🔄 PROPOSTA DE TROCA</div>
-          
-          <div class="trade-offer-container" style="display: flex; gap: 15px; margin: 20px 0; align-items: center; justify-content: space-around;">
-            <!-- O QUE VOCÊ PEDE -->
-            <div class="trade-side-box">
-              <span class="chip-label">VOCÊ RECEBE:</span>
-              <div id="trade-want-card-slot" class="trade-card-slot"></div>
-            </div>
-
-            <div class="trade-swap-icon" style="font-size: 2rem;">⇅</div>
-
-            <!-- O QUE VOCÊ OFERECE -->
-            <div class="trade-side-box">
-              <span class="chip-label">SUA REPETIDA:</span>
-              <select id="trade-offer-sticker-select" class="form-input" style="margin-top: 8px; width: 100%;">
-                <option value="">Carregando suas repetidas...</option>
-              </select>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 10px; justify-content: center;">
-            <button class="nav-btn active btn-submit" onclick="submitTradeProposal()">
-              🚀 ENVIAR PROPOSTA
-            </button>
-            <button class="reset-btn logout-btn" onclick="closeTradeProposalModal()">
-              CANCELAR
-            </button>
-          </div>
         </div>
       </div>
 
