@@ -483,7 +483,7 @@ function switchTab(tabName, event) {
 }
 
 // ==============================================================================
-// FASE 3: MÓDULO DE AMIGOS & CONSULTA DE REPETIDAS (COM BUSCA POR NOME OU #ID)
+// FASE 3: MÓDULO DE AMIGOS & CONSULTA DE REPETIDAS (COM DEDUPLICAÇÃO DE AMIGOS)
 // ==============================================================================
 
 async function handleSearchFriend() {
@@ -731,7 +731,8 @@ async function loadFriendsAndRequests() {
       return;
     }
 
-    const friendUserIds = friendsData.map(f => f.user_id === currentUser.id ? f.friend_id : f.user_id);
+    // DEDUPLICAÇÃO ESTRITA DE IDS DE AMIGOS
+    const friendUserIds = [...new Set(friendsData.map(f => f.user_id === currentUser.id ? f.friend_id : f.user_id))];
 
     const { data: friendProfiles } = await supabaseClient
       .from("profiles")
@@ -780,7 +781,6 @@ async function loadFriendsAndRequests() {
       const actionBox = document.createElement("div");
       actionBox.className = "friend-action-btns";
 
-      // BOTÃO NOVO PARA EXAMINAR AS REPETIDAS DO AMIGO
       const btnViewDuplicates = document.createElement("button");
       btnViewDuplicates.className = "btn-friend-action btn-friend-accept";
       btnViewDuplicates.textContent = "📦 VER REPETIDAS";
@@ -849,7 +849,7 @@ async function loadFriendDuplicatesList(friendId, searchQuery) {
   try {
     const { data: duplicates, error } = await supabaseClient.rpc("get_friend_duplicates", {
       p_friend_id: friendId,
-      p_search_query: searchQuery
+      p_search_query: searchQuery || ""
     });
 
     if (error) throw error;
@@ -929,12 +929,15 @@ function openTradeProposalModal(targetSticker) {
   slotContainer.appendChild(card);
 
   selectEl.replaceChildren();
-  const userDuplicates = allStickers.filter(s => (userInventory[s.id] || 0) > 1);
+
+  // FILTRA SUAS REPETIDAS, EXCLUINDO A MESMA FIGURINHA QUE ESTÁ SOLICITANDO
+  const targetId = targetSticker.sticker_id || targetSticker.id;
+  const userDuplicates = allStickers.filter(s => (userInventory[s.id] || 0) > 1 && s.id !== targetId);
 
   if (userDuplicates.length === 0) {
     const opt = document.createElement("option");
     opt.value = "";
-    opt.textContent = "Você não tem repetidas para oferecer!";
+    opt.textContent = "Você não tem outras repetidas elegíveis para oferecer!";
     selectEl.appendChild(opt);
   } else {
     const defaultOpt = document.createElement("option");
@@ -964,7 +967,14 @@ async function submitTradeProposal() {
 
   const offeredStickerId = selectEl.value;
   if (!offeredStickerId) {
-    return showGameAlert("Selecione uma das suas figurinhas repetidas para oferecer!", "Aviso", "⚠️");
+    return showGameAlert("Selecione uma das suas figurinhas repetidas para oferecer na troca!", "Aviso", "⚠️");
+  }
+
+  const targetStickerId = selectedTargetStickerForTrade.sticker_id || selectedTargetStickerForTrade.id;
+
+  // VALIDAÇÃO DE SEGURANÇA: IMPEDE TROCAR UMA FIGURINHA PELA MESMA FIGURINHA
+  if (offeredStickerId === targetStickerId) {
+    return showGameAlert("Você não pode trocar a mesma figurinha por ela mesma!", "Troca Inválida", "⚠️");
   }
 
   try {
@@ -972,7 +982,7 @@ async function submitTradeProposal() {
       sender_id: currentUser.id,
       receiver_id: selectedFriendForTrade.id,
       sender_sticker_id: offeredStickerId,
-      receiver_sticker_id: selectedTargetStickerForTrade.sticker_id,
+      receiver_sticker_id: targetStickerId,
       status: "pending"
     }]).select();
 
