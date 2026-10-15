@@ -409,7 +409,7 @@ nav {
 }
 
 /* ==============================================================================
-   MÓDULO DE TROCAS SPLIT-SCREEN PRO (FILTROS COMPACTOS, LUPA E LAYOUT FLEXÍVEL)
+   MÓDULO DE TROCAS SPLIT-SCREEN PRO (FILTROS INDEPENDENTES E LUPA FIXA)
    ============================================================================== */
 #friend-trade-stage {
   width: 100%;
@@ -426,29 +426,29 @@ nav {
   padding-bottom: 8px;
 }
 
-/* BARRA DE FILTROS COMPACTA */
-.trade-filters-bar {
+/* CONTAINER DE FILTROS DENTRO DE CADA COLUNA */
+.trade-filters-box {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  background: #0d041e;
+  gap: 8px;
+  background: #080214;
   border: 1px solid #ff007f;
-  padding: 10px 14px;
-  border-radius: 10px;
-  margin-bottom: 15px;
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 12px;
 }
 
 .trade-search-compact {
-  height: 38px !important;
-  font-size: 0.8rem !important;
-  padding: 6px 12px !important;
+  height: 34px !important;
+  font-size: 0.75rem !important;
+  padding: 4px 10px !important;
   width: 100%;
 }
 
 .filter-chips-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
   align-items: center;
 }
 
@@ -457,9 +457,9 @@ nav {
   border: 1px solid #00ffff;
   color: #aaa;
   font-family: 'Press Start 2P', monospace;
-  font-size: 0.55rem;
-  padding: 6px 10px;
-  border-radius: 6px;
+  font-size: 0.5rem;
+  padding: 5px 8px;
+  border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -468,13 +468,13 @@ nav {
 .filter-chip.active {
   background: #00ffff;
   color: #000;
-  box-shadow: 0 0 10px #00ffff;
+  box-shadow: 0 0 8px #00ffff;
   font-weight: bold;
 }
 
-.filter-chip.legendary.active { background: #ff9800; color: #000; box-shadow: 0 0 10px #ff9800; border-color: #ff9800; }
-.filter-chip.epic.active { background: #9c27b0; color: #fff; box-shadow: 0 0 10px #9c27b0; border-color: #9c27b0; }
-.filter-chip.rare.active { background: #2196f3; color: #fff; box-shadow: 0 0 10px #2196f3; border-color: #2196f3; }
+.filter-chip.legendary.active { background: #ff9800; color: #000; box-shadow: 0 0 8px #ff9800; border-color: #ff9800; }
+.filter-chip.epic.active { background: #9c27b0; color: #fff; box-shadow: 0 0 8px #9c27b0; border-color: #9c27b0; }
+.filter-chip.rare.active { background: #2196f3; color: #fff; box-shadow: 0 0 8px #2196f3; border-color: #2196f3; }
 
 /* CONTAINER SPLIT SCREEN */
 .trade-split-container {
@@ -500,8 +500,8 @@ nav {
 
 .trade-grid-scroll {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
-  gap: 10px !important;
+  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)) !important;
+  gap: 12px !important;
   max-height: 380px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -510,9 +510,10 @@ nav {
   box-sizing: border-box;
 }
 
-/* CARDS NA MESA DE TROCA COM BOTÃO DE LUPA */
+/* CARDS NA MESA DE TROCA COM BOTÃO DE LUPA FIXO E AMPLIADO */
 .trade-card-wrapper {
   position: relative;
+  width: 100%;
 }
 
 .trade-grid-scroll .card {
@@ -520,29 +521,32 @@ nav {
   border-width: 2px !important;
 }
 
+/* BOTÃO DE LUPA AMPLIADO E VISÍVEL MESMO NO HOVER */
 .trade-inspect-btn {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid #00ffff;
-  color: #00ffff;
-  font-size: 0.65rem;
-  width: 22px;
-  height: 22px;
+  top: -6px;
+  left: -6px;
+  background: #120826;
+  border: 2px solid #00ffff;
+  color: #ffff00;
+  font-size: 0.85rem;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 5;
-  transition: transform 0.15s ease;
+  z-index: 20 !important; /* MANTÉM SOBREPOSTO A QUALQUER HOVER DO CARD */
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .trade-inspect-btn:hover {
-  transform: scale(1.2);
+  transform: scale(1.25);
   background: #00ffff;
   color: #000;
+  box-shadow: 0 0 15px #00ffff;
 }
 
 .trade-grid-scroll .card img {
