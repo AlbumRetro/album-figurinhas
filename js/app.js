@@ -39,11 +39,12 @@ let allStickers = [];
 let availablePacks = [];
 let countdownInterval = null;
 
-// ESTADO DA MESA DE TROCAS SPLIT-SCREEN
+// ESTADO DA MESA DE TROCAS SPLIT-SCREEN (FILTROS INDEPENDENTES)
 let selectedFriendForTrade = null;
 let selectedWantSticker = null;
 let selectedOfferSticker = null;
-let currentTradeFilter = 'missing';
+let currentFriendTradeFilter = 'missing';
+let currentMyTradeFilter = 'all';
 
 // ESTADO DO REVEAL SEQUENCIAL
 let revealQueue = [];
@@ -107,13 +108,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // BUSCA EM TEMPO REAL NAS REPETIDAS DO AMIGO (NOME OU #ID)
-  const dupSearchInput = document.getElementById("friend-dup-search-input");
-  if (dupSearchInput) {
-    dupSearchInput.addEventListener("input", () => {
+  // LISTENERS DE BUSCA EM TEMPO REAL INDEPENDENTES NA MESA DE TROCA
+  const friendDupSearchInput = document.getElementById("friend-dup-search-input");
+  if (friendDupSearchInput) {
+    friendDupSearchInput.addEventListener("input", () => {
       if (selectedFriendForTrade) {
-        loadFriendDuplicatesList(selectedFriendForTrade.id, dupSearchInput.value.trim());
+        loadFriendDuplicatesList(selectedFriendForTrade.id, friendDupSearchInput.value.trim());
       }
+    });
+  }
+
+  const myDupSearchInput = document.getElementById("my-dup-search-input");
+  if (myDupSearchInput) {
+    myDupSearchInput.addEventListener("input", () => {
+      renderMyDuplicatesForTrade();
     });
   }
 });
@@ -477,7 +485,7 @@ function switchTab(tabName, event) {
   if (tabName === "album") renderAlbum();
   if (tabName === "shop") renderShop();
   if (tabName === "perfil") {
-    closeTradeStage(); // Garante que volta para a visão padrão de Perfil
+    closeTradeStage();
     renderDailyPassUI();
     if (currentUser) updateProfileUI(currentUser);
     loadFriendsAndRequests();
@@ -486,7 +494,7 @@ function switchTab(tabName, event) {
 }
 
 // ==============================================================================
-// MÓDULO DE AMIGOS & BUSCA P2P
+// MÓDULO DE AMIGOS & BUSCA P2P (CORRIGIDO BUG DE DUPLICIDADE)
 // ==============================================================================
 
 async function handleSearchFriend() {
@@ -734,6 +742,7 @@ async function loadFriendsAndRequests() {
       return;
     }
 
+    // CORREÇÃO DO BUG DO AMIGO DUPLICADO: Deduplica os IDs de amigos
     const friendUserIds = [...new Set(friendsData.map(f => f.user_id === currentUser.id ? f.friend_id : f.user_id))];
 
     const { data: friendProfiles } = await supabaseClient
@@ -749,7 +758,13 @@ async function loadFriendsAndRequests() {
       return;
     }
 
+    // GARANTE RENDERIZAÇÃO ÚNICA POR ID
+    const renderedIds = new Set();
+
     friendProfiles.forEach(f => {
+      if (renderedIds.has(f.id)) return;
+      renderedIds.add(f.id);
+
       const card = document.createElement("div");
       card.className = "friend-user-card";
 
@@ -816,24 +831,40 @@ async function respondFriendRequest(friendshipId, newStatus) {
 }
 
 // ==============================================================================
-// MÓDULO DE TROCAS SPLIT-SCREEN PRO (FILTROS CHIP E LUPA DE INSPEÇÃO)
+// MÓDULO DE TROCAS SPLIT-SCREEN PRO (FILTROS INDEPENDENTES E LUPA FIXA)
 // ==============================================================================
 
-function setTradeFilter(filterType) {
-  currentTradeFilter = filterType;
+function setFriendTradeFilter(filterType) {
+  currentFriendTradeFilter = filterType;
 
-  document.querySelectorAll(".filter-chip").forEach(chip => chip.classList.remove("active"));
-  
-  if (filterType === 'missing') document.getElementById("chip-filter-missing")?.classList.add("active");
-  if (filterType === 'all') document.getElementById("chip-filter-all")?.classList.add("active");
-  if (filterType === 'legendary') document.querySelector(".filter-chip.legendary")?.classList.add("active");
-  if (filterType === 'epic') document.querySelector(".filter-chip.epic")?.classList.add("active");
-  if (filterType === 'rare') document.querySelector(".filter-chip.rare")?.classList.add("active");
+  const chips = ['missing', 'all', 'legendary', 'epic', 'rare'];
+  chips.forEach(c => {
+    const el = document.getElementById(`chip-friend-${c}`);
+    if (el) el.classList.remove("active");
+  });
+
+  const activeEl = document.getElementById(`chip-friend-${filterType}`);
+  if (activeEl) activeEl.classList.add("active");
 
   if (selectedFriendForTrade) {
     const query = document.getElementById("friend-dup-search-input")?.value.trim() || "";
     loadFriendDuplicatesList(selectedFriendForTrade.id, query);
   }
+}
+
+function setMyTradeFilter(filterType) {
+  currentMyTradeFilter = filterType;
+
+  const chips = ['all', 'legendary', 'epic', 'rare'];
+  chips.forEach(c => {
+    const el = document.getElementById(`chip-my-${c}`);
+    if (el) el.classList.remove("active");
+  });
+
+  const activeEl = document.getElementById(`chip-my-${filterType}`);
+  if (activeEl) activeEl.classList.add("active");
+
+  renderMyDuplicatesForTrade();
 }
 
 async function openTradeStage(friend) {
@@ -849,7 +880,9 @@ async function openTradeStage(friend) {
   if (defaultView) defaultView.style.display = "none";
   if (stageView) stageView.style.display = "flex";
 
-  setTradeFilter('missing'); // Padrão: exibe apenas o que você NÃO tem!
+  setFriendTradeFilter('missing');
+  setMyTradeFilter('all');
+
   updateTradeSlotsPreview();
   renderMyDuplicatesForTrade();
 }
@@ -890,24 +923,24 @@ async function loadFriendDuplicatesList(friendId, searchQuery) {
     if (!duplicates || duplicates.length === 0) {
       const emptyP = document.createElement("p");
       emptyP.className = "status-text";
-      emptyP.textContent = searchQuery ? "Nenhuma figurinha encontrada." : "Este amigo não possui figurinhas repetidas.";
+      emptyP.textContent = "Este amigo não possui repetidas disponíveis.";
       container.appendChild(emptyP);
       return;
     }
 
-    // FILTRAGEM INTELIGENTE DE UX
+    // APLICAÇÃO DO FILTRO DO AMIGO
     let filteredList = duplicates;
 
-    if (currentTradeFilter === 'missing') {
+    if (currentFriendTradeFilter === 'missing') {
       filteredList = duplicates.filter(stk => !userInventory[stk.sticker_id] || userInventory[stk.sticker_id] === 0);
-    } else if (['legendary', 'epic', 'rare', 'common'].includes(currentTradeFilter)) {
-      filteredList = duplicates.filter(stk => stk.rarity === currentTradeFilter);
+    } else if (['legendary', 'epic', 'rare', 'common'].includes(currentFriendTradeFilter)) {
+      filteredList = duplicates.filter(stk => stk.rarity === currentFriendTradeFilter);
     }
 
     if (filteredList.length === 0) {
       const emptyP = document.createElement("p");
       emptyP.className = "status-text";
-      emptyP.textContent = currentTradeFilter === 'missing' 
+      emptyP.textContent = currentFriendTradeFilter === 'missing' 
         ? "Você já possui todas as figurinhas repetidas deste amigo!" 
         : "Nenhuma figurinha encontrada para este filtro.";
       container.appendChild(emptyP);
@@ -922,7 +955,7 @@ async function loadFriendDuplicatesList(friendId, searchQuery) {
       const card = document.createElement("div");
       card.className = `card rarity-${encodeURIComponent(stk.rarity)} ${isSelected ? 'trade-selected' : ''}`;
 
-      // BOTÃO DE LUPA DE INSPEÇÃO
+      // BOTÃO DE LUPA INDEPENDENTE COM Z-INDEX ELEVADO E ÁREA DE TOQUE AMPLIADA
       const inspectBtn = document.createElement("button");
       inspectBtn.className = "trade-inspect-btn";
       inspectBtn.innerHTML = "🔍";
@@ -976,16 +1009,30 @@ async function loadFriendDuplicatesList(friendId, searchQuery) {
 
 function renderMyDuplicatesForTrade() {
   const container = document.getElementById("my-duplicates-grid");
+  const searchQuery = document.getElementById("my-dup-search-input")?.value.trim().toLowerCase() || "";
   if (!container) return;
 
   container.replaceChildren();
 
-  const myDuplicates = allStickers.filter(s => (userInventory[s.id] || 0) > 1);
+  let myDuplicates = allStickers.filter(s => (userInventory[s.id] || 0) > 1);
+
+  // APLICA FILTRO DE RARIDADE DO SEU LADO
+  if (['legendary', 'epic', 'rare', 'common'].includes(currentMyTradeFilter)) {
+    myDuplicates = myDuplicates.filter(s => s.rarity === currentMyTradeFilter);
+  }
+
+  // APLICA FILTRO DE BUSCA POR TEXTO DO SEU LADO
+  if (searchQuery) {
+    myDuplicates = myDuplicates.filter(s => 
+      s.id.toLowerCase().includes(searchQuery) || 
+      (s.title && s.title.toLowerCase().includes(searchQuery))
+    );
+  }
 
   if (myDuplicates.length === 0) {
     const emptyP = document.createElement("p");
     emptyP.className = "status-text";
-    emptyP.textContent = "Você não tem figurinhas repetidas para oferecer.";
+    emptyP.textContent = "Nenhuma figurinha repetida encontrada com os filtros selecionados.";
     container.appendChild(emptyP);
     return;
   }
@@ -998,7 +1045,7 @@ function renderMyDuplicatesForTrade() {
     const card = document.createElement("div");
     card.className = `card rarity-${encodeURIComponent(stk.rarity)} ${isSelected ? 'trade-selected' : ''}`;
 
-    // BOTÃO DE LUPA DE INSPEÇÃO DAS MINHAS REPETIDAS
+    // BOTÃO DE LUPA NAS SUAS REPETIDAS
     const inspectBtn = document.createElement("button");
     inspectBtn.className = "trade-inspect-btn";
     inspectBtn.innerHTML = "🔍";
