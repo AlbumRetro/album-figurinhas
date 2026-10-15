@@ -43,6 +43,7 @@ let countdownInterval = null;
 let selectedFriendForTrade = null;
 let selectedWantSticker = null;
 let selectedOfferSticker = null;
+let currentTradeFilter = 'missing';
 
 // ESTADO DO REVEAL SEQUENCIAL
 let revealQueue = [];
@@ -815,8 +816,25 @@ async function respondFriendRequest(friendshipId, newStatus) {
 }
 
 // ==============================================================================
-// MÓDULO DE TROCAS SPLIT-SCREEN (MESA DE TROCA NA PÁGINA DE PERFIL)
+// MÓDULO DE TROCAS SPLIT-SCREEN PRO (FILTROS CHIP E LUPA DE INSPEÇÃO)
 // ==============================================================================
+
+function setTradeFilter(filterType) {
+  currentTradeFilter = filterType;
+
+  document.querySelectorAll(".filter-chip").forEach(chip => chip.classList.remove("active"));
+  
+  if (filterType === 'missing') document.getElementById("chip-filter-missing")?.classList.add("active");
+  if (filterType === 'all') document.getElementById("chip-filter-all")?.classList.add("active");
+  if (filterType === 'legendary') document.querySelector(".filter-chip.legendary")?.classList.add("active");
+  if (filterType === 'epic') document.querySelector(".filter-chip.epic")?.classList.add("active");
+  if (filterType === 'rare') document.querySelector(".filter-chip.rare")?.classList.add("active");
+
+  if (selectedFriendForTrade) {
+    const query = document.getElementById("friend-dup-search-input")?.value.trim() || "";
+    loadFriendDuplicatesList(selectedFriendForTrade.id, query);
+  }
+}
 
 async function openTradeStage(friend) {
   selectedFriendForTrade = friend;
@@ -831,9 +849,9 @@ async function openTradeStage(friend) {
   if (defaultView) defaultView.style.display = "none";
   if (stageView) stageView.style.display = "flex";
 
+  setTradeFilter('missing'); // Padrão: exibe apenas o que você NÃO tem!
   updateTradeSlotsPreview();
   renderMyDuplicatesForTrade();
-  await loadFriendDuplicatesList(friend.id, "");
 }
 
 function closeTradeStage() {
@@ -877,10 +895,47 @@ async function loadFriendDuplicatesList(friendId, searchQuery) {
       return;
     }
 
-    duplicates.forEach(stk => {
+    // FILTRAGEM INTELIGENTE DE UX
+    let filteredList = duplicates;
+
+    if (currentTradeFilter === 'missing') {
+      filteredList = duplicates.filter(stk => !userInventory[stk.sticker_id] || userInventory[stk.sticker_id] === 0);
+    } else if (['legendary', 'epic', 'rare', 'common'].includes(currentTradeFilter)) {
+      filteredList = duplicates.filter(stk => stk.rarity === currentTradeFilter);
+    }
+
+    if (filteredList.length === 0) {
+      const emptyP = document.createElement("p");
+      emptyP.className = "status-text";
+      emptyP.textContent = currentTradeFilter === 'missing' 
+        ? "Você já possui todas as figurinhas repetidas deste amigo!" 
+        : "Nenhuma figurinha encontrada para este filtro.";
+      container.appendChild(emptyP);
+      return;
+    }
+
+    filteredList.forEach(stk => {
+      const cardWrapper = document.createElement("div");
+      cardWrapper.className = "trade-card-wrapper";
+
+      const isSelected = selectedWantSticker && (selectedWantSticker.sticker_id === stk.sticker_id || selectedWantSticker.id === stk.sticker_id);
       const card = document.createElement("div");
-      const isSelected = selectedWantSticker && selectedWantSticker.sticker_id === stk.sticker_id;
       card.className = `card rarity-${encodeURIComponent(stk.rarity)} ${isSelected ? 'trade-selected' : ''}`;
+
+      // BOTÃO DE LUPA DE INSPEÇÃO
+      const inspectBtn = document.createElement("button");
+      inspectBtn.className = "trade-inspect-btn";
+      inspectBtn.innerHTML = "🔍";
+      inspectBtn.title = "Inspecionar Figurinha";
+      inspectBtn.onclick = (e) => {
+        e.stopPropagation();
+        openInspect({
+          id: stk.sticker_id,
+          title: stk.title,
+          image_url: stk.image_url,
+          rarity: stk.rarity
+        });
+      };
 
       const img = document.createElement("img");
       img.src = stk.image_url;
@@ -899,7 +954,7 @@ async function loadFriendDuplicatesList(friendId, searchQuery) {
       card.appendChild(badge);
 
       card.onclick = () => {
-        if (selectedOfferSticker && (selectedOfferSticker.id === stk.sticker_id || selectedOfferSticker.id === stk.id)) {
+        if (selectedOfferSticker && (selectedOfferSticker.id === stk.sticker_id)) {
           return showGameAlert("Você não pode solicitar a mesma figurinha que está oferecendo!", "Seleção Inválida", "⚠️");
         }
         selectedWantSticker = stk;
@@ -907,7 +962,9 @@ async function loadFriendDuplicatesList(friendId, searchQuery) {
         updateTradeSlotsPreview();
       };
 
-      container.appendChild(card);
+      cardWrapper.appendChild(inspectBtn);
+      cardWrapper.appendChild(card);
+      container.appendChild(cardWrapper);
     });
 
   } catch (err) {
@@ -934,9 +991,22 @@ function renderMyDuplicatesForTrade() {
   }
 
   myDuplicates.forEach(stk => {
-    const card = document.createElement("div");
+    const cardWrapper = document.createElement("div");
+    cardWrapper.className = "trade-card-wrapper";
+
     const isSelected = selectedOfferSticker && selectedOfferSticker.id === stk.id;
+    const card = document.createElement("div");
     card.className = `card rarity-${encodeURIComponent(stk.rarity)} ${isSelected ? 'trade-selected' : ''}`;
+
+    // BOTÃO DE LUPA DE INSPEÇÃO DAS MINHAS REPETIDAS
+    const inspectBtn = document.createElement("button");
+    inspectBtn.className = "trade-inspect-btn";
+    inspectBtn.innerHTML = "🔍";
+    inspectBtn.title = "Inspecionar Figurinha";
+    inspectBtn.onclick = (e) => {
+      e.stopPropagation();
+      openInspect(stk);
+    };
 
     const img = document.createElement("img");
     img.src = stk.image_url;
@@ -965,7 +1035,9 @@ function renderMyDuplicatesForTrade() {
       updateTradeSlotsPreview();
     };
 
-    container.appendChild(card);
+    cardWrapper.appendChild(inspectBtn);
+    cardWrapper.appendChild(card);
+    container.appendChild(cardWrapper);
   });
 }
 
