@@ -18,7 +18,7 @@
     <link rel="preload" href="https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/loot.mp3" as="audio" />
 
     <!-- Folha de Estilos Unificada com Cache Busting -->
-    <link rel="stylesheet" href="css/style.css?v=6.0" />
+    <link rel="stylesheet" href="css/style.css?v=7.0" />
   </head>
   <body>
     <!-- Flash Overlay de Alta Intensidade -->
@@ -232,25 +232,37 @@
             </div>
           </div>
 
-          <!-- SUB-TELA: MESA DE TROCAS SPLIT-SCREEN (ENTRA NO LUGAR DO PERFIL QUANDO ATIVA) -->
+          <!-- SUB-TELA: MESA DE TROCAS SPLIT-SCREEN PRO (NOVA UX COM FILTROS E LUPA) -->
           <div id="friend-trade-stage" class="friends-module-container" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #00f0ff; padding-bottom: 10px;">
+            <div class="trade-stage-header">
               <h3 class="section-subtitle" style="margin: 0;">🤝 MESA DE TROCA: <span id="trade-partner-name">AMIGO</span></h3>
               <button class="reset-btn logout-btn" onclick="closeTradeStage()">← VOLTAR AOS AMIGOS</button>
             </div>
 
-            <!-- MESA SPLIT-SCREEN (COLUNA ESQUERDA: AMIGO / COLUNA DIREITA: SUA OFERTA) -->
+            <!-- BARRA DE FILTROS DO AMIGO -->
+            <div class="trade-filters-bar">
+              <div class="filter-group-inputs">
+                <input 
+                  type="text" 
+                  id="friend-dup-search-input" 
+                  placeholder="🔍 Filtrar por nome ou #ID..." 
+                  class="form-input friend-input trade-search-compact"
+                />
+              </div>
+              <div class="filter-chips-container">
+                <button class="filter-chip active" id="chip-filter-missing" onclick="setTradeFilter('missing')">🎯 QUE EU NÃO TENHO</button>
+                <button class="filter-chip" id="chip-filter-all" onclick="setTradeFilter('all')">📦 TODAS REPETIDAS</button>
+                <button class="filter-chip rarity-chip legendary" onclick="setTradeFilter('legendary')">💎 LENDÁRIAS</button>
+                <button class="filter-chip rarity-chip epic" onclick="setTradeFilter('epic')">🟣 ÉPICAS</button>
+                <button class="filter-chip rarity-chip rare" onclick="setTradeFilter('rare')">🔵 RARAS</button>
+              </div>
+            </div>
+
+            <!-- MESA SPLIT-SCREEN -->
             <div class="trade-split-container">
               <!-- COLUNA ESQUERDA: INVENTÁRIO DO AMIGO -->
               <div class="trade-column">
                 <h4 class="friends-sub-title">📦 REPETIDAS DO AMIGO</h4>
-                <input 
-                  type="text" 
-                  id="friend-dup-search-input" 
-                  placeholder="Filtrar por nome ou #ID..." 
-                  class="form-input friend-input"
-                  style="margin-bottom: 10px; width: 100%;"
-                />
                 <div id="friend-duplicates-grid" class="grid trade-grid-scroll"></div>
               </div>
 
@@ -279,7 +291,7 @@
                 </div>
               </div>
 
-              <button class="nav-btn active btn-submit" style="height: 50px; padding: 0 20px;" onclick="submitTradeProposal()">
+              <button class="nav-btn active btn-submit btn-send-trade" onclick="submitTradeProposal()">
                 🚀 ENVIAR PROPOSTA
               </button>
             </div>
@@ -375,6 +387,6 @@
     </div>
 
     <!-- Script JS -->
-    <script src="js/app.js?v=6.0"></script>
+    <script src="js/app.js?v=7.0"></script>
   </body>
 </html>
