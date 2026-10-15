@@ -409,7 +409,7 @@ nav {
 }
 
 /* ==============================================================================
-   MESA DE TROCAS SPLIT-SCREEN & CONTRATO FIXO INFERIOR (100% CORRIGIDO)
+   MÓDULO DE TROCAS SPLIT-SCREEN PRO (FILTROS COMPACTOS, LUPA E LAYOUT FLEXÍVEL)
    ============================================================================== */
 #friend-trade-stage {
   width: 100%;
@@ -417,11 +417,71 @@ nav {
   overflow: hidden;
 }
 
+.trade-stage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #00f0ff;
+  padding-bottom: 8px;
+}
+
+/* BARRA DE FILTROS COMPACTA */
+.trade-filters-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #0d041e;
+  border: 1px solid #ff007f;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.trade-search-compact {
+  height: 38px !important;
+  font-size: 0.8rem !important;
+  padding: 6px 12px !important;
+  width: 100%;
+}
+
+.filter-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.filter-chip {
+  background: #120826;
+  border: 1px solid #00ffff;
+  color: #aaa;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-chip:hover,
+.filter-chip.active {
+  background: #00ffff;
+  color: #000;
+  box-shadow: 0 0 10px #00ffff;
+  font-weight: bold;
+}
+
+.filter-chip.legendary.active { background: #ff9800; color: #000; box-shadow: 0 0 10px #ff9800; border-color: #ff9800; }
+.filter-chip.epic.active { background: #9c27b0; color: #fff; box-shadow: 0 0 10px #9c27b0; border-color: #9c27b0; }
+.filter-chip.rare.active { background: #2196f3; color: #fff; box-shadow: 0 0 10px #2196f3; border-color: #2196f3; }
+
+/* CONTAINER SPLIT SCREEN */
 .trade-split-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 15px;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -433,26 +493,56 @@ nav {
   padding: 12px;
   display: flex;
   flex-direction: column;
-  min-width: 0; /* IMPEDE A COLUNA DE ESTRAGAR A TELA */
+  min-width: 0;
   box-sizing: border-box;
   overflow: hidden;
 }
 
 .trade-grid-scroll {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)) !important;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
   gap: 10px !important;
   max-height: 380px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px 4px !important;
+  padding: 6px 4px !important;
   width: 100% !important;
   box-sizing: border-box;
+}
+
+/* CARDS NA MESA DE TROCA COM BOTÃO DE LUPA */
+.trade-card-wrapper {
+  position: relative;
 }
 
 .trade-grid-scroll .card {
   padding: 6px !important;
   border-width: 2px !important;
+}
+
+.trade-inspect-btn {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid #00ffff;
+  color: #00ffff;
+  font-size: 0.65rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  transition: transform 0.15s ease;
+}
+
+.trade-inspect-btn:hover {
+  transform: scale(1.2);
+  background: #00ffff;
+  color: #000;
 }
 
 .trade-grid-scroll .card img {
@@ -464,6 +554,9 @@ nav {
 .trade-grid-scroll .card .card-title {
   font-size: 0.55rem !important;
   margin-top: 4px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .trade-grid-scroll .card.trade-selected {
@@ -472,15 +565,16 @@ nav {
   transform: scale(1.02);
 }
 
+/* BARRA FIXA DE CONTRATO */
 .trade-contract-bar {
   background: #120826;
   border: 2px solid #00ffff;
   border-radius: 14px;
-  padding: 15px;
+  padding: 12px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
   width: 100%;
   box-sizing: border-box;
@@ -489,15 +583,15 @@ nav {
 .trade-slot-preview {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
   flex: 1;
   min-width: 0;
 }
 
 .trade-preview-card {
-  width: 90px;
-  height: 120px;
+  width: 85px;
+  height: 115px;
   border: 2px dashed #ff007f;
   border-radius: 8px;
   display: flex;
@@ -530,16 +624,18 @@ nav {
   text-shadow: 0 0 10px #ffff00;
 }
 
+.btn-send-trade {
+  height: 48px;
+  padding: 0 18px;
+  font-size: 0.75rem !important;
+}
+
 @media (max-width: 768px) {
   .trade-split-container {
     grid-template-columns: 1fr;
   }
   .trade-contract-bar {
     flex-direction: column;
-  }
-  .trade-preview-card {
-    width: 80px;
-    height: 105px;
   }
 }
 
