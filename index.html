@@ -1,242 +1,410 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Controle de Compras - SECTUR</title>
-  <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Álbum de Figurinhas Retrô</title>
 
-  <header class="navbar">
-    <div class="logo">
-      <h2>Controle de Compras <span class="brand">SECTUR</span></h2>
-    </div>
-    <div class="user-profile">
-      <button id="theme-toggle" class="btn-theme" onclick="toggleTheme()">🌙 Modo Escuro</button>
-      <span class="user-name">Gestor de Compras</span>
-    </div>
-  </header>
+    <!-- Fontes e Dependências Externas -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <main class="container">
-    
-    <!-- Dashboard KPIs (Reduzido para 2 Cards Diretos ao Ponto) -->
-    <section class="kpi-grid">
-      <div class="kpi-card">
-        <h3>Solicitações (Concluídas / Total)</h3>
-        <p id="kpi-total-qtd">0 / 0</p>
+    <!-- Preload dos Áudios do Supabase para Carregamento Instantâneo -->
+    <link rel="preload" href="https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/compra.mp3" as="audio" />
+    <link rel="preload" href="https://bysyjbuqdeayxoryrjmj.supabase.co/storage/v1/object/public/figurinhas/loot.mp3" as="audio" />
+
+    <!-- Folha de Estilos Unificada com Cache Busting -->
+    <link rel="stylesheet" href="css/style.css?v=8.0" />
+  </head>
+  <body>
+    <!-- Flash Overlay de Alta Intensidade -->
+    <div id="flash" class="flash-overlay"></div>
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen" class="auth-container">
+      <div class="auth-box">
+        <h1 class="glitch-title">ÁLBUM RETRÔ</h1>
+        <p class="auth-subtitle">
+          Entre com sua conta Google para salvar seu progresso online
+        </p>
+
+        <div class="auth-buttons">
+          <button
+            class="nav-btn active btn-google"
+            onclick="loginWithGoogle()"
+          >
+            🚀 ENTRAR COM O GOOGLE
+          </button>
+        </div>
+
+        <p id="auth-error" class="auth-error"></p>
       </div>
-      <div class="kpi-card">
-        <h3>Valor Total Exibido</h3>
-        <p id="kpi-total-valor">R$ 0,00</p>
-      </div>
-    </section>
+    </div>
 
-    <!-- Toolbar de Filtros (Sticky) -->
-    <section class="toolbar">
-      <input type="text" id="search-input" placeholder="Buscar por Protocolo, Descritivo, Req, Ficha, Empenho, NF...">
+    <!-- CONTEÚDO PRINCIPAL (INICIA OCULTO VIA JS) -->
+    <div id="main-app" style="display: none;">
       
-      <select id="filter-ano">
-        <option value="">Todos os Anos</option>
-      </select>
-
-      <select id="filter-local">
-        <option value="">Todos os Locais</option>
-      </select>
-
-      <select id="filter-evento">
-        <option value="">Todos os Eventos</option>
-      </select>
-
-      <select id="filter-status">
-        <option value="">Todos os Status</option>
-        <option value="A_VENCER">⏳ A Vencer / A Pagar (Previsão Futura)</option>
-        <option value="ALMOXARIFADO">Entregue (Almoxarifado)</option>
-        <option value="CONTABILIDADE">Concluído (Contabilidade)</option>
-        <option value="AGUARDANDO">Aguardando Entrega</option>
-        <option value="CANCELADO">Cancelado</option>
-      </select>
-
-      <button class="btn btn-filter" onclick="applyFilters()">🔍 Filtrar</button>
-      <button class="btn btn-secondary" onclick="exportToExcel()">📊 Exportar Excel</button>
-      <button class="btn btn-primary" onclick="openModal()">+ Nova Solicitação</button>
-    </section>
-
-    <!-- Tabela Principal com Colunas Ordenáveis -->
-    <section class="table-container">
-      <table id="purchases-table">
-        <thead>
-          <tr>
-            <th class="sortable" data-sort="protocolo">Protocolo <span class="sort-icon">↕</span></th>
-            <th class="sortable" data-sort="evento">Evento / Local <span class="sort-icon">↕</span></th>
-            <th class="sortable" data-sort="descritivo">Descritivo <span class="sort-icon">↕</span></th>
-            <th class="sortable" data-sort="requisicao">Req. <span class="sort-icon">↕</span></th>
-            <th>Ficha</th>
-            <th>Empenho(s)</th>
-            <th class="sortable" data-sort="af">AF/OS <span class="sort-icon">↕</span></th>
-            <th class="sortable" data-sort="valor">Valor (R$) <span class="sort-icon">↕</span></th>
-            <th>N.F.(s)</th>
-            <th>NL(s)</th>
-            <th class="sortable" data-sort="prevPagamento">Prev. Pagamento <span class="sort-icon">↕</span></th>
-            <th class="sortable" data-sort="status">Status <span class="sort-icon">↕</span></th>
-          </tr>
-        </thead>
-        <tbody id="table-body">
-          <!-- Renderizado via JS -->
-        </tbody>
-      </table>
-    </section>
-
-  </main>
-
-  <!-- Modal de Explorar / Editar Completo -->
-  <div id="form-modal" class="modal">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeModal()">×</span>
-      <h3 id="modal-title">Nova Solicitação de Compra</h3>
-      
-      <!-- Tag Destaque com o Cálculo da Previsão de Pagamento -->
-      <div id="box-previsao-pagamento" class="previsao-banner" style="display: none;">
-        <span>🗓️ Previsão Estimada de Pagamento:</span>
-        <strong id="tag-previsao-data">-</strong>
+      <!-- BARRA SUPERIOR EXCLUSIVA PARA ADMIN / SUPERADMIN -->
+      <div id="admin-header-bar" class="user-bar" style="display: none;">
+        <span id="user-email-display" class="user-email-text"></span>
+        <div>
+          <button class="reset-btn logout-btn" onclick="handleLogout()">
+            Sair 🚪
+          </button>
+        </div>
       </div>
 
-      <form id="purchase-form">
-        <input type="hidden" id="form-id">
-        
-        <div class="form-group-row">
-          <div class="form-group">
-            <label for="form-protocolo">Protocolo</label>
-            <input type="text" id="form-protocolo" required placeholder="Ex: 9.659/2025">
+      <h1 class="glitch-title">Álbum de Figurinhas Retrô</h1>
+
+      <!-- NAVEGAÇÃO PRINCIPAL -->
+      <nav>
+        <button class="nav-btn active" onclick="switchTab('album', event)">
+          Meu Álbum
+        </button>
+        <button class="nav-btn" onclick="switchTab('shop', event)">
+          Abrir Pacote 🎁
+        </button>
+        <button class="nav-btn" onclick="switchTab('perfil', event)">
+          Perfil 👤
+        </button>
+        <button class="nav-btn" onclick="switchTab('inventory', event)">
+          Inventário / Repetidas 📦
+        </button>
+        <button id="btn-admin-tab" class="nav-btn btn-hidden" onclick="switchTab('admin', event)">
+          Painel Admin
+        </button>
+        <button id="btn-superadmin-tab" class="nav-btn btn-hidden" onclick="switchTab('superadmin', event)">
+          SuperAdmin
+        </button>
+      </nav>
+
+      <!-- ABA 1: ÁLBUM -->
+      <div id="tab-album" class="tab-content active">
+        <p id="album-status" class="status-text">
+          Carregando álbum...
+        </p>
+        <div id="album-grid" class="grid"></div>
+      </div>
+
+      <!-- ABA 2: LOJA / PACOTES -->
+      <div id="tab-shop" class="tab-content">
+        <div class="shop-container">
+          <div id="points-display" class="points-display">
+            SALDO: 1000 PONTOS
           </div>
-          <div class="form-group">
-            <label for="form-requisicao">Requisição</label>
-            <input type="text" id="form-requisicao" placeholder="Ex: 1618">
-          </div>
-          <div class="form-group">
-            <label for="form-af">AF/OS</label>
-            <input type="text" id="form-af" placeholder="Ex: 85">
+
+          <h2 class="section-subtitle">
+            BOOSTER PACKS HOLOGRAM
+          </h2>
+          <p class="status-text">
+            Clique no pacote aluminum foil para iniciar a cerimônia de abertura!
+          </p>
+
+          <div id="packs-container" class="pack-wrapper">
+            <!-- Renderizado dinamicamente pelo renderShop() -->
           </div>
         </div>
+      </div>
 
-        <div class="form-group-row">
-          <div class="form-group">
-            <label for="form-evento">Evento</label>
-            <select id="form-evento" required>
-              <option value="">Selecione o Evento</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="form-local">Local</label>
-            <select id="form-local" required>
-              <option value="">Selecione o Local</option>
-            </select>
-          </div>
-        </div>
+      <!-- ABA 3: PERFIL DO USUÁRIO & PASSE DIÁRIO & AMIGOS & MESA DE TROCAS -->
+      <div id="tab-perfil" class="tab-content">
+        <div class="profile-page-container">
+          
+          <!-- VISUALIZAÇÃO PADRÃO DO PERFIL -->
+          <div id="profile-default-view">
+            <!-- CARD ESTILO GAMER CARD / DISCORD -->
+            <div class="gamer-card-wrapper">
+              <div class="gamer-card-banner"></div>
+              
+              <div class="gamer-card-body">
+                <div class="gamer-avatar-container">
+                  <img id="profile-avatar-img" src="https://via.placeholder.com/100?text=USER" alt="Avatar" class="gamer-avatar-img" />
+                </div>
 
-        <div class="form-group">
-          <label for="form-descritivo">Descritivo Completo</label>
-          <textarea id="form-descritivo" rows="2" required></textarea>
-        </div>
+                <div class="gamer-card-details">
+                  <div class="gamer-identity">
+                    <h2 id="profile-display-name" class="gamer-name">Carregando...</h2>
+                    <span id="profile-tag" class="gamer-tag-badge">#0000</span>
+                  </div>
+                  
+                  <p id="profile-handle" class="gamer-handle" style="display: none;"></p>
+                  
+                  <div class="gamer-meta-row">
+                    <div class="gamer-chip">
+                      <span class="chip-label">SALDO:</span>
+                      <strong id="profile-points-balance" class="chip-value">0 PTS</strong>
+                    </div>
+                    <div id="profile-email" class="gamer-email-private">🔒 login@exemplo.com</div>
+                  </div>
+                </div>
 
-        <div class="form-group-row">
-          <div class="form-group">
-            <label for="form-valor">Valor Total (R$)</label>
-            <input type="number" step="0.01" id="form-valor" required placeholder="0.00">
-          </div>
-          <div class="form-group">
-            <label for="form-entrega">Data de Entrega</label>
-            <input type="date" id="form-entrega">
-          </div>
-          <div class="form-group">
-            <label for="form-data-processo">Data Final do Processo</label>
-            <input type="date" id="form-data-processo">
-          </div>
-        </div>
-
-        <!-- Seções Múltiplas: Fichas, Empenhos, NFs e NLs -->
-        <div class="multi-relations-grid">
-          <div class="relation-block">
-            <label>Ficha(s)</label>
-            <div class="relation-input-group">
-              <input type="text" id="input-tag-ficha" placeholder="Ex: 285">
-              <button type="button" class="btn btn-sm" onclick="addTag('ficha')">+</button>
+                <div class="gamer-actions">
+                  <button class="reset-btn logout-btn" onclick="handleLogout()">Sair 🚪</button>
+                </div>
+              </div>
             </div>
-            <div id="tags-ficha" class="tags-container"></div>
-          </div>
 
-          <div class="relation-block">
-            <label>Empenho(s)</label>
-            <div class="relation-input-group">
-              <input type="text" id="input-tag-empenho" placeholder="Ex: 1086">
-              <button type="button" class="btn btn-sm" onclick="addTag('empenho')">+</button>
+            <!-- MÓDULO DE AMIGOS & SOCIEDADE P2P -->
+            <div class="friends-module-container">
+              <h3 class="section-subtitle">👥 REDE DE AMIGOS & SOCIEDADE P2P</h3>
+              
+              <!-- BUSCA DE AMIGOS -->
+              <div class="friends-search-box">
+                <div class="search-input-group">
+                  <input 
+                    type="text" 
+                    id="friend-search-input" 
+                    placeholder="Buscar por Nome#TAG ou @handle..." 
+                    class="form-input friend-input"
+                  />
+                  <button class="nav-btn active btn-search-friend" onclick="handleSearchFriend()">
+                    🔍 BUSCAR
+                  </button>
+                </div>
+                <div id="friends-search-results" class="friends-results-list"></div>
+              </div>
+
+              <!-- CENTRAL DE PROPOSTAS DE TROCA -->
+              <div id="trades-proposals-section" class="friends-sub-section" style="display: none;">
+                <h4 class="friends-sub-title">🔄 PROPOSTAS DE TROCA PENDENTES</h4>
+                <div id="trades-proposals-list" class="friends-cards-list"></div>
+              </div>
+
+              <!-- SOLICITAÇÕES PENDENTES DE AMIZADE -->
+              <div id="friends-requests-section" class="friends-sub-section" style="display: none;">
+                <h4 class="friends-sub-title">📩 SOLICITAÇÕES RECEBIDAS</h4>
+                <div id="friends-requests-list" class="friends-cards-list"></div>
+              </div>
+
+              <!-- LISTA DE AMIGOS ATIVOS -->
+              <div class="friends-sub-section">
+                <h4 class="friends-sub-title">🤝 MEUS AMIGOS</h4>
+                <div id="friends-active-list" class="friends-cards-list">
+                  <p class="status-text">Buscando lista de amigos...</p>
+                </div>
+              </div>
             </div>
-            <div id="tags-empenho" class="tags-container"></div>
-          </div>
 
-          <div class="relation-block">
-            <label>Nota(s) Fiscal(is)</label>
-            <div class="relation-input-group">
-              <input type="text" id="input-tag-nf" placeholder="Ex: 90609">
-              <button type="button" class="btn btn-sm" onclick="addTag('nf')">+</button>
+            <!-- INSÍGNIAS (GRID DE CONQUISTAS) -->
+            <div class="achievements-section">
+              <h3 class="section-subtitle">🏅 INSÍGNIAS E CONQUISTAS</h3>
+              <div class="achievements-grid">
+                <div class="achievement-card unlocked" title="Participante da Versão Beta">
+                  <div class="achievement-icon">🌟</div>
+                  <div class="achievement-name">BETA</div>
+                </div>
+                <div class="achievement-card locked" title="Mestre do Passe Diário">
+                  <div class="achievement-icon">🔒</div>
+                  <div class="achievement-name">FIDELIDADE</div>
+                </div>
+                <div class="achievement-card locked" title="Coleção Completa">
+                  <div class="achievement-icon">🔒</div>
+                  <div class="achievement-name">MESTRE</div>
+                </div>
+                <div class="achievement-card locked" title="Comerciante P2P">
+                  <div class="achievement-icon">🔒</div>
+                  <div class="achievement-name">TRADER</div>
+                </div>
+              </div>
             </div>
-            <div id="tags-nf" class="tags-container"></div>
-          </div>
 
-          <div class="relation-block">
-            <label>Liquidação(ões) NL</label>
-            <div class="relation-input-group">
-              <input type="text" id="input-tag-nl" placeholder="Ex: 11277">
-              <button type="button" class="btn btn-sm" onclick="addTag('nl')">+</button>
+            <!-- CONTAINER DO PASSE DIÁRIO DENTRO DO PERFIL -->
+            <div class="pass-container embedded-pass">
+              <h2 class="section-title">⚡ PASSE DE RECOMPENSAS DIÁRIAS</h2>
+              <p class="status-text">Faça login todos os dias para acumular pontos e desbloquear o super bônus no 7º dia!</p>
+              
+              <div class="timer-box">
+                <span class="timer-label">PRÓXIMO RESET EM (HORÁRIO DE SP):</span>
+                <span id="pass-countdown-timer" class="timer-clock">00:00:00</span>
+              </div>
+
+              <div id="pass-streak-grid" class="pass-grid">
+                <!-- Trilha dos 7 Dias Renderizada via JavaScript -->
+              </div>
+
+              <button id="btn-claim-pass" class="nav-btn active btn-pass-claim" onclick="handleClaimDailyPass()">
+                🎁 RESGATAR RECOMPENSA DE HOJE
+              </button>
             </div>
-            <div id="tags-nl" class="tags-container"></div>
+          </div>
+
+          <!-- SUB-TELA: MESA DE TROCAS SPLIT-SCREEN PRO (COM FILTROS INDEPENDENTES E LUPA AMPLIADA) -->
+          <div id="friend-trade-stage" class="friends-module-container" style="display: none;">
+            <div class="trade-stage-header">
+              <h3 class="section-subtitle" style="margin: 0;">🤝 MESA DE TROCA: <span id="trade-partner-name">AMIGO</span></h3>
+              <button class="reset-btn logout-btn" onclick="closeTradeStage()">← VOLTAR AOS AMIGOS</button>
+            </div>
+
+            <!-- MESA SPLIT-SCREEN -->
+            <div class="trade-split-container">
+              
+              <!-- COLUNA ESQUERDA: INVENTÁRIO DO AMIGO -->
+              <div class="trade-column">
+                <h4 class="friends-sub-title">📦 REPETIDAS DO AMIGO</h4>
+                
+                <!-- CONTROLES E FILTROS DO AMIGO -->
+                <div class="trade-filters-box">
+                  <input 
+                    type="text" 
+                    id="friend-dup-search-input" 
+                    placeholder="🔍 Buscar no amigo..." 
+                    class="form-input friend-input trade-search-compact"
+                  />
+                  <div class="filter-chips-container">
+                    <button class="filter-chip active" id="chip-friend-missing" onclick="setFriendTradeFilter('missing')">🎯 QUE EU NÃO TENHO</button>
+                    <button class="filter-chip" id="chip-friend-all" onclick="setFriendTradeFilter('all')">📦 TODAS</button>
+                    <button class="filter-chip rarity-chip legendary" id="chip-friend-legendary" onclick="setFriendTradeFilter('legendary')">💎 LENDÁRIAS</button>
+                    <button class="filter-chip rarity-chip epic" id="chip-friend-epic" onclick="setFriendTradeFilter('epic')">🟣 ÉPICAS</button>
+                    <button class="filter-chip rarity-chip rare" id="chip-friend-rare" onclick="setFriendTradeFilter('rare')">🔵 RARAS</button>
+                  </div>
+                </div>
+
+                <div id="friend-duplicates-grid" class="grid trade-grid-scroll"></div>
+              </div>
+
+              <!-- COLUNA DIREITA: SUAS REPETIDAS -->
+              <div class="trade-column">
+                <h4 class="friends-sub-title">🎒 SUAS REPETIDAS ELEGÍVEIS</h4>
+                
+                <!-- CONTROLES E FILTROS DO SEU INVENTÁRIO -->
+                <div class="trade-filters-box">
+                  <input 
+                    type="text" 
+                    id="my-dup-search-input" 
+                    placeholder="🔍 Buscar nas suas..." 
+                    class="form-input friend-input trade-search-compact"
+                  />
+                  <div class="filter-chips-container">
+                    <button class="filter-chip active" id="chip-my-all" onclick="setMyTradeFilter('all')">📦 TODAS</button>
+                    <button class="filter-chip rarity-chip legendary" id="chip-my-legendary" onclick="setMyTradeFilter('legendary')">💎 LENDÁRIAS</button>
+                    <button class="filter-chip rarity-chip epic" id="chip-my-epic" onclick="setMyTradeFilter('epic')">🟣 ÉPICAS</button>
+                    <button class="filter-chip rarity-chip rare" id="chip-my-rare" onclick="setMyTradeFilter('rare')">🔵 RARAS</button>
+                  </div>
+                </div>
+
+                <div id="my-duplicates-grid" class="grid trade-grid-scroll"></div>
+              </div>
+
+            </div>
+
+            <!-- BARRA FIXA INFERIOR DO CONTRATO DE TROCA -->
+            <div class="trade-contract-bar">
+              <div class="trade-slot-preview">
+                <span class="chip-label">VOCÊ RECEBE:</span>
+                <div id="trade-slot-want" class="trade-preview-card">
+                  <p class="status-text">(Selecione uma carta do amigo)</p>
+                </div>
+              </div>
+
+              <div class="trade-swap-arrow">⇄</div>
+
+              <div class="trade-slot-preview">
+                <span class="chip-label">VOCÊ OFERECE:</span>
+                <div id="trade-slot-offer" class="trade-preview-card">
+                  <p class="status-text">(Selecione uma repetida sua)</p>
+                </div>
+              </div>
+
+              <button class="nav-btn active btn-submit btn-send-trade" onclick="submitTradeProposal()">
+                🚀 ENVIAR PROPOSTA
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ABA 4: INVENTÁRIO -->
+      <div id="tab-inventory" class="tab-content">
+        <h2 class="section-title">
+          Minha Coleção Completa
+        </h2>
+        <p id="inventory-status" class="status-text"></p>
+        <div id="inventory-grid" class="grid"></div>
+      </div>
+
+      <!-- ABA 5: PAINEL SUPERADMIN -->
+      <div id="tab-superadmin" class="tab-content">
+        <h2 class="section-title">
+          Cadastrar Nova Figurinha
+        </h2>
+        <div class="form-container">
+          <input type="text" id="sticker-id" placeholder="ID da Figurinha (ex: 006)" class="form-input" />
+          <input type="text" id="sticker-title" placeholder="Título/Nome" class="form-input" />
+          <input type="text" id="sticker-url" placeholder="URL da Imagem" class="form-input" />
+          <select id="sticker-rarity" class="form-input">
+            <option value="common">Comum</option>
+            <option value="rare">Rara</option>
+            <option value="epic">Épica</option>
+            <option value="legendary">Lendária</option>
+          </select>
+          <button class="nav-btn active btn-submit" onclick="createStickerBySuperadmin()">
+            Salvar Figurinha
+          </button>
+        </div>
+      </div>
+
+      <!-- OVERLAY DE ANIMAÇÃO DE SUSPENSE DA LOOTBOX -->
+      <div id="loot-ceremony-overlay" class="loot-ceremony-overlay">
+        <div class="sunburst-rays"></div>
+        <div id="ceremony-pack-stage" class="ceremony-pack-stage">
+          <div class="unboxing-pack">
+            <div class="pack-top-crimp"></div>
+            <div class="pack-foil-body">
+              <div class="pack-foil-title" id="ceremony-pack-title">BOOSTER PACK</div>
+              <div class="pack-foil-emblem">⚡</div>
+              <div class="pack-foil-sub" id="ceremony-pack-sub">UNBOXING...</div>
+            </div>
+            <div class="pack-bottom-crimp"></div>
+            <div class="pack-burst-light"></div>
           </div>
         </div>
+      </div>
 
-        <div class="form-group-row checkboxes">
-          <label><input type="checkbox" id="form-chk-almox"> Almoxarifado</label>
-          <label><input type="checkbox" id="form-chk-contab"> Contabilidade</label>
-          <label><input type="checkbox" id="form-chk-cancelado"> Cancelado</label>
+      <!-- MODAL DE REVELAÇÃO DA FIGURINHA -->
+      <div id="reveal-overlay" class="reveal-overlay">
+        <div class="sunburst-rays"></div>
+        <div class="lootbox-modal">
+          <div id="loot-badge-container"></div>
+          <div id="revealed-card-container"></div>
+          <button
+            id="btn-collect"
+            class="btn-collect"
+            onclick="closeReveal()"
+          >COLAR NO ÁLBUM</button>
         </div>
+      </div>
 
-        <!-- Seção Múltipla de Anexos por Categoria (Salva no Google Drive) -->
-        <div class="attachments-grid">
-          <div class="attachment-block">
-            <label for="file-req-input">📁 Anexo(s) Requisição</label>
-            <input type="file" id="file-req-input" multiple accept="image/*,.pdf" onchange="handleFileSelect(event, 'req')">
-            <div id="list-files-req" class="file-chips-container"></div>
-          </div>
+      <!-- MODAL DE INSPEÇÃO DA FIGURINHA -->
+      <div
+        id="inspect-overlay"
+        class="inspect-overlay"
+        onclick="closeInspect()"
+      >
+        <div id="inspect-card-container"></div>
+        <p class="inspect-hint">
+          (Clique em qualquer lugar para fechar)
+        </p>
+      </div>
 
-          <div class="attachment-block">
-            <label for="file-af-input">📁 Anexo(s) AF/OS</label>
-            <input type="file" id="file-af-input" multiple accept="image/*,.pdf" onchange="handleFileSelect(event, 'af')">
-            <div id="list-files-af" class="file-chips-container"></div>
-          </div>
-
-          <div class="attachment-block">
-            <label for="file-nf-input">📁 Anexo(s) Nota Fiscal</label>
-            <input type="file" id="file-nf-input" multiple accept="image/*,.pdf" onchange="handleFileSelect(event, 'nf')">
-            <div id="list-files-nf" class="file-chips-container"></div>
-          </div>
-
-          <div class="attachment-block">
-            <label for="file-nl-input">📁 Anexo(s) Liquidação NL</label>
-            <input type="file" id="file-nl-input" multiple accept="image/*,.pdf" onchange="handleFileSelect(event, 'nl')">
-            <div id="list-files-nl" class="file-chips-container"></div>
-          </div>
+      <!-- MODAL DE ERRO / AVISO GAMIFICADO -->
+      <div id="game-alert-overlay" class="reveal-overlay">
+        <div class="lootbox-modal alert-box">
+          <div class="badge alert-header-badge">⚠️ ATENÇÃO</div>
+          <div class="alert-defeat-icon">💀</div>
+          <h3 id="game-alert-title" class="alert-title-text">SALDO INSUFICIENTE</h3>
+          <p id="game-alert-message" class="alert-message-text"></p>
+          <button class="alert-btn-ok" onclick="closeGameAlert()">ENTENDIDO [OK]</button>
         </div>
+      </div>
 
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar Registro</button>
-        </div>
-      </form>
     </div>
-  </div>
 
-  <!-- Biblioteca para exportação de planilhas (.xlsx) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="app.js"></script>
-</body>
+    <!-- Script JS -->
+    <script src="js/app.js?v=8.0"></script>
+  </body>
 </html>
